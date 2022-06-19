@@ -1,0 +1,9 @@
+{
+    "id": "bf2042-portal-github-plugin",
+    "name": "GitHub Integration",
+    "version": "0.0.1",
+    "author": "RoflKartoffelDE",
+    "main": "index.js",
+    "homepage": "https://roflkartoffelde.github.io/bf2042-portal-github-plugin/",
+    "description": "This plugin adds integration features for GitHub repositories"
+}
