@@ -2,6 +2,7 @@ const pluginID = "bf2042-portal-github-plugin";
 const plugin = BF2042Portal.Plugins.getPlugin(pluginID);
 const userAgent = plugin.manifest.id + "/" + plugin.manifest.version;
 let octokit;
+let mouseOnSaveBtn = false;
 let gitHubPluginData = {
   experiences: [
     {
@@ -9,7 +10,8 @@ let gitHubPluginData = {
       personalAccessToken: "",
       repositoryName: "",
       workspacePath: "workspace.xml",
-      auth: {}
+      auth: {},
+      commitOnSave: true,
     }
   ]
 }
@@ -66,8 +68,8 @@ function highlightSaveBtn() {
   }
 }
 
-function saveBtnClicked(event){
-  if(event.button == 0){
+function saveBtnClicked(event) {
+  if (event.button == 0) {
     gitHubCommit();
   }
 }
@@ -76,23 +78,28 @@ async function initGitHubPlugin() {
   octokitModule = await import("https://cdn.skypack.dev/octokit");
   loadPluginData();
   let actionBtnWrapper = document.querySelector("#action-buttons-wrapper");
-  if(!actionBtnWrapper){
+  if (!actionBtnWrapper) {
     console.error("could not inject commit function for save button!");
-  }else{
+  } else {
     actionBtnWrapper.onmouseenter = highlightSaveBtn;
     highlightSaveBtn();
   }
-  
+}
+
+function askForRepoSetup() {
+  if (confirm("You have not setup a repository for this experience - would you like to do so now?")) {
+    setupRepository();
+  }
 }
 
 function setupRepository() {
   let personalAccessToken;
-  while (!personalAccessToken || personalAccessToken == "") {
+  while (!personalAccessToken) {
     personalAccessToken = prompt("Please enter your GitHub personal access token:");
   }
 
   let repository;
-  while (!repository || repository == "") {
+  while (!repository) {
     repository = prompt("Please enter the repository name to be used:");
   }
 
@@ -115,7 +122,7 @@ function setupRepository() {
         personalAccessToken: personalAccessToken,
         repositoryName: repository,
         workspacePath: "workspace.xml"
-      })
+      });
     } else {
       pluginDataForPlayground.auth = authResult.data;
       pluginDataForPlayground.personalAccessToken = personalAccessToken;
@@ -124,122 +131,132 @@ function setupRepository() {
     storePluginData();
   }).catch((exc) => {
     console.error(exc);
-    alert("Failed to login to GitHub!");
+    alert("Failed to setup Repository!");
   });
-
 }
 
 function gitHubPull() {
   if (!isRepoDefined()) {
-    setupRepository();
+    askForRepoSetup();
   }
-  let pluginDataForPlayground = getPluginDataForPlayground(getPlaygroundID());
-  if (confirm("Do you really want to reset this workspace to the latest commit of '" + pluginDataForPlayground.repositoryName + "'?")) {
-    _Blockly.getMainWorkspace().clear();
-
-    try {
-      octokit = new octokitModule.Octokit({
-        auth: pluginDataForPlayground.personalAccessToken,
-        userAgent: userAgent
-      });
-      octokit.rest.repos.getContent({
-        mediaType: {
-          format: "raw",
-        },
-        owner: pluginDataForPlayground.auth.login,
-        repo: pluginDataForPlayground.repositoryName,
-        path: pluginDataForPlayground.workspacePath,
-      }).then((workspaceResult) => {
-        console.log(JSON.stringify(workspaceResult));
-        if (!load(workspaceResult.data)) {
-          alert("Failed to import workspace!");
-        }
-      }).catch((exc) => {
-        console.error(exc);
+  if (isRepoDefined()) {
+    let pluginDataForPlayground = getPluginDataForPlayground(getPlaygroundID());
+    if (confirm("Do you really want to reset this workspace to the latest commit of '" + pluginDataForPlayground.repositoryName + "'?")) {
+      try {
+        octokit = new octokitModule.Octokit({
+          auth: pluginDataForPlayground.personalAccessToken,
+          userAgent: userAgent
+        });
+        octokit.rest.repos.getContent({
+          mediaType: {
+            format: "raw",
+          },
+          owner: pluginDataForPlayground.auth.login,
+          repo: pluginDataForPlayground.repositoryName,
+          path: pluginDataForPlayground.workspacePath,
+        }).then((workspaceResult) => {
+          console.log(JSON.stringify(workspaceResult));
+          _Blockly.getMainWorkspace().clear();
+          if (!load(workspaceResult.data)) {
+            alert("Failed to import workspace!");
+          }
+        }).catch((exc) => {
+          console.error(exc);
+          alert("Failed to load latest workspace!");
+        });
+      }
+      catch (e) {
+        console.error(e);
         alert("Failed to import workspace!");
-      });
-    }
-    catch (e) {
-      console.error(e);
-      alert("Failed to import workspace!");
+      }
     }
   }
 }
 
 function gitHubCommit() {
   if (!isRepoDefined()) {
-    setupRepository();
+    askForRepoSetup();
   }
-  let pluginDataForPlayground = getPluginDataForPlayground(getPlaygroundID());
-  const workspace = _Blockly.getMainWorkspace();
-  const workspaceDOM = _Blockly.Xml.workspaceToDom(workspace, true);
-  const variablesDOM = _Blockly.Xml.variablesToDom(workspace.getAllVariables());
-  const variableElements = variablesDOM.getElementsByTagName("variable");
-  //clean up corrupted variables
-  for (let index = 0; index < variableElements.length; index++) {
-    const element = variableElements[index];
-    if (!element.getAttributeNode("type") || element.innerHTML.trim().length == 0) {
-      variablesDOM.removeChild(element);
-    }
-  }
-  workspaceDOM.removeChild(workspaceDOM.getElementsByTagName("variables")[0]);
-  workspaceDOM.insertBefore(variablesDOM, workspaceDOM.firstChild);
-  const workspaceXML = _Blockly.Xml.domToPrettyText(workspaceDOM);
-
-  let contentString = btoa(workspaceXML);
-
-  let commitMessage = prompt("Enter commit message:");
-  if (commitMessage && !commitMessage == "") {
-    octokit = new octokitModule.Octokit({
-      auth: pluginDataForPlayground.personalAccessToken,
-      userAgent: userAgent
-    });
-
-    octokit.rest.repos.getContent({
-      mediaType: {
-        format: "object",
-      },
-      owner: pluginDataForPlayground.auth.login,
-      repo: pluginDataForPlayground.repositoryName
-    }).then((result) => {
-      console.log(JSON.stringify(result));
-      let workspaceFile = result.data.entries.find((entry) => entry.path == pluginDataForPlayground.workspacePath);
-      if (workspaceFile) {
-        octokit.rest.repos.createOrUpdateFileContents({
-          owner: pluginDataForPlayground.auth.login,
-          repo: pluginDataForPlayground.repositoryName,
-          path: pluginDataForPlayground.workspacePath,
-          message: commitMessage,
-          content: contentString,
-          sha: workspaceFile.sha
-        }).then((result1) => {
-          let updateResultText = JSON.stringify(result1);
-          console.log("Update Result: " + updateResultText);
-          alert("Commited: " + result1.data.commit.sha);
-        }).catch((exc) => {
-          console.error(exc);
-          alert("Failed to commit!\n" + JSON.stringify(exc));
-        });
-      } else {
-        octokit.rest.repos.createOrUpdateFileContents({
-          owner: pluginDataForPlayground.auth.login,
-          repo: pluginDataForPlayground.repositoryName,
-          path: pluginDataForPlayground.workspacePath,
-          message: commitMessage,
-          content: contentString
-        }).then((result1) => {
-          let updateResultText = JSON.stringify(result1);
-          console.log("Update Result: " + updateResultText);
-          alert("Commited: " + result1.data.commit.sha);
-        }).catch((exc) => {
-          console.error(exc);
-          alert("Failed to commit!\n" + JSON.stringify(exc));
+  if (isRepoDefined()) {
+    let commitMessage = prompt("Enter commit message:");
+    if (commitMessage === null) {
+      return;
+    }else{
+      if(commitMessage.trim() == ""){
+        commitMessage = "auto-commit from portal website\n\nChanges:";
+        _Blockly.getMainWorkspace().getUndoStack().forEach(element => {
+          commitMessage += "\n"+JSON.stringify(element.toJson());
         });
       }
-    }).catch((e) => {
-      console.error(e);
-      alert("Failed to commit!\n" + JSON.stringify(e));
-    });
+      let pluginDataForPlayground = getPluginDataForPlayground(getPlaygroundID());
+      const workspace = _Blockly.getMainWorkspace();
+      const workspaceDOM = _Blockly.Xml.workspaceToDom(workspace, true);
+      const variablesDOM = _Blockly.Xml.variablesToDom(workspace.getAllVariables());
+      const variableElements = variablesDOM.getElementsByTagName("variable");
+      //clean up corrupted variables
+      for (let index = 0; index < variableElements.length; index++) {
+        const element = variableElements[index];
+        if (!element.getAttributeNode("type") || element.innerHTML.trim().length == 0) {
+          variablesDOM.removeChild(element);
+        }
+      }
+      workspaceDOM.removeChild(workspaceDOM.getElementsByTagName("variables")[0]);
+      workspaceDOM.insertBefore(variablesDOM, workspaceDOM.firstChild);
+      const workspaceXML = _Blockly.Xml.domToPrettyText(workspaceDOM);
+
+      let contentString = btoa(workspaceXML);
+
+      octokit = new octokitModule.Octokit({
+        auth: pluginDataForPlayground.personalAccessToken,
+        userAgent: userAgent
+      });
+
+      octokit.rest.repos.getContent({
+        mediaType: {
+          format: "object",
+        },
+        owner: pluginDataForPlayground.auth.login,
+        repo: pluginDataForPlayground.repositoryName
+      }).then((result) => {
+        console.log(JSON.stringify(result));
+        let workspaceFile = result.data.entries.find((entry) => entry.path == pluginDataForPlayground.workspacePath);
+        if (workspaceFile) {
+          octokit.rest.repos.createOrUpdateFileContents({
+            owner: pluginDataForPlayground.auth.login,
+            repo: pluginDataForPlayground.repositoryName,
+            path: pluginDataForPlayground.workspacePath,
+            message: commitMessage,
+            content: contentString,
+            sha: workspaceFile.sha
+          }).then((result1) => {
+            let updateResultText = JSON.stringify(result1);
+            console.log("Update Result: " + updateResultText);
+            alert("Commited: " + result1.data.commit.sha);
+          }).catch((exc) => {
+            console.error(exc);
+            alert("Failed to commit!\n" + JSON.stringify(exc));
+          });
+        } else {
+          octokit.rest.repos.createOrUpdateFileContents({
+            owner: pluginDataForPlayground.auth.login,
+            repo: pluginDataForPlayground.repositoryName,
+            path: pluginDataForPlayground.workspacePath,
+            message: commitMessage,
+            content: contentString
+          }).then((result1) => {
+            let updateResultText = JSON.stringify(result1);
+            console.log("Update Result: " + updateResultText);
+            alert("Commited: " + result1.data.commit.sha);
+          }).catch((exc) => {
+            console.error(exc);
+            alert("Failed to commit!\n" + JSON.stringify(exc));
+          });
+        }
+      }).catch((e) => {
+        console.error(e);
+        alert("Failed to commit!\n" + JSON.stringify(e));
+      });
+    }
   }
 }
 
