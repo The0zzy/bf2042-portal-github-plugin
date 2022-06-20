@@ -64,6 +64,7 @@ async function initGitHubPlugin() {
   //_Blockly.getMainWorkspace().addChangeListener(highlightSaveBtn);
   let observer = new MutationObserver(highlightSaveBtn);
   observer.observe(document.querySelector(".action-button-group"), {childList: true});
+  highlightSaveBtn();
 }
 
 async function setupRepository() {
@@ -167,44 +168,51 @@ async function gitHubCommit() {
       auth: pluginDataForPlayground.personalAccessToken,
       userAgent: userAgent
     });
+    
     octokit.rest.repos.getContent({
       mediaType: {
         format: "object",
       },
       owner: pluginDataForPlayground.auth.login,
-      repo: pluginDataForPlayground.repositoryName,
-      path: pluginDataForPlayground.workspacePath,
+      repo: pluginDataForPlayground.repositoryName
     }).then((result) => {
       console.log(JSON.stringify(result));
-      octokit.rest.repos.createOrUpdateFileContents({
-        owner: pluginDataForPlayground.auth.login,
-        repo: pluginDataForPlayground.repositoryName,
-        path: pluginDataForPlayground.workspacePath,
-        message: commitMessage,
-        content: contentString,
-        sha: result.data.sha
-      }).then((result1) => {
-        let updateResultText = JSON.stringify(result1);
-        console.log("Update Result: " + updateResultText);
-        alert("Commited: " + result1.data.commit.sha);
-      }).catch((exc) => {
-        console.error(exc);
-      });
+      let workspaceFile = result.data.entries.find((entry) => entry.path == pluginDataForPlayground.workspacePath);
+      if(workspaceFile){
+        octokit.rest.repos.createOrUpdateFileContents({
+          owner: pluginDataForPlayground.auth.login,
+          repo: pluginDataForPlayground.repositoryName,
+          path: pluginDataForPlayground.workspacePath,
+          message: commitMessage,
+          content: contentString,
+          sha: workspaceFile.sha
+        }).then((result1) => {
+          let updateResultText = JSON.stringify(result1);
+          console.log("Update Result: " + updateResultText);
+          alert("Commited: " + result1.data.commit.sha);
+        }).catch((exc) => {
+          console.error(exc);
+          alert("Failed to commit!\n"+JSON.stringify(exc));
+        });
+      }else{
+        octokit.rest.repos.createOrUpdateFileContents({
+          owner: pluginDataForPlayground.auth.login,
+          repo: pluginDataForPlayground.repositoryName,
+          path: pluginDataForPlayground.workspacePath,
+          message: commitMessage,
+          content: contentString
+        }).then((result1) => {
+          let updateResultText = JSON.stringify(result1);
+          console.log("Update Result: " + updateResultText);
+          alert("Commited: " + result1.data.commit.sha);
+        }).catch((exc) => {
+          console.error(exc);
+          alert("Failed to commit!\n"+JSON.stringify(exc));
+        });
+      }
     }).catch((e) => {
       console.error(e);
-      octokit.rest.repos.createOrUpdateFileContents({
-        owner: pluginDataForPlayground.auth.login,
-        repo: pluginDataForPlayground.repositoryName,
-        path: pluginDataForPlayground.workspacePath,
-        message: commitMessage,
-        content: contentString
-      }).then((result1) => {
-        let updateResultText = JSON.stringify(result1);
-        console.log("Update Result: " + updateResultText);
-        alert("Commited: " + result1.data.commit.sha);
-      }).catch((exc) => {
-        console.error(exc);
-      });
+      alert("Failed to commit!\n"+JSON.stringify(e));
     });
   }
 }
