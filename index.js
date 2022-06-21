@@ -19,11 +19,13 @@ let gitHubPluginData = {
 function loadPluginData() {
   let loadedData = localStorage.getItem(pluginID);
   console.log("GitHubPlugin - loaded plugin data: %s", loadedData);
-  loadedData = JSON.parse(loadedData);
-  if (!loadedData || !loadedData.experiences[0].playgroundId == "") {
-    alert("Failed to load local GitHub plugin data!");
-  } else {
-    gitHubPluginData = loadedData;
+  if(loadedData != null){
+    loadedData = JSON.parse(loadedData);
+    if (!loadedData || !loadedData.experiences[0].playgroundId == "") {
+      console.error("GitHub Plugin: invalid plugin data retrieved from storage.");
+    } else {
+      gitHubPluginData = loadedData;
+    }
   }
 }
 
@@ -181,11 +183,11 @@ function gitHubCommit() {
     let commitMessage = prompt("Enter commit message:");
     if (commitMessage === null) {
       return;
-    }else{
-      if(commitMessage.trim() == ""){
+    } else {
+      if (commitMessage.trim() == "") {
         commitMessage = "auto-commit from portal website\n\nChanges:";
         _Blockly.getMainWorkspace().getUndoStack().forEach(element => {
-          commitMessage += "\n"+JSON.stringify(element.toJson());
+          commitMessage += "\n" + JSON.stringify(element.toJson());
         });
       }
       let pluginDataForPlayground = getPluginDataForPlayground(getPlaygroundID());
@@ -307,7 +309,11 @@ const gitHubCommitItem = {
   weight: 182
 }
 
-initGitHubPlugin();
-_Blockly.ContextMenuRegistry.registry.register(gitHubSetupItem);
-_Blockly.ContextMenuRegistry.registry.register(gitHubPullItem);
-_Blockly.ContextMenuRegistry.registry.register(gitHubCommitItem);
+initGitHubPlugin().then((result) => {
+  console.log("GitHub Plugin loaded.");
+  _Blockly.ContextMenuRegistry.registry.register(gitHubSetupItem);
+  _Blockly.ContextMenuRegistry.registry.register(gitHubPullItem);
+  _Blockly.ContextMenuRegistry.registry.register(gitHubCommitItem);
+}).catch((exc) => {
+  console.error("Could not load plugin:", exc);
+});
