@@ -2,7 +2,6 @@ const pluginID = "bf2042-portal-github-plugin";
 const plugin = BF2042Portal.Plugins.getPlugin(pluginID);
 const userAgent = plugin.manifest.id + "/" + plugin.manifest.version;
 let octokit;
-let mouseOnSaveBtn = false;
 let gitHubPluginData = {
   experiences: [
     {
@@ -18,8 +17,8 @@ let gitHubPluginData = {
 
 function loadPluginData() {
   let loadedData = localStorage.getItem(pluginID);
-  console.log("GitHubPlugin - loaded plugin data: %s", loadedData);
-  if(loadedData != null){
+  console.log("GitHubPlugin - loaded plugin data.");
+  if (loadedData != null) {
     loadedData = JSON.parse(loadedData);
     if (!loadedData || !loadedData.experiences[0].playgroundId == "") {
       console.error("GitHub Plugin: invalid plugin data retrieved from storage.");
@@ -32,7 +31,7 @@ function loadPluginData() {
 function storePluginData() {
   let pluginDataString = JSON.stringify(gitHubPluginData);
   localStorage.setItem(pluginID, pluginDataString);
-  console.log("GitHubPlugin - storing plugin data: %s", pluginDataString);
+  console.log("GitHubPlugin - storing plugin data.");
 }
 
 function getPlaygroundID() {
@@ -47,7 +46,7 @@ function getPluginDataForPlayground(playgroundId) {
   return gitHubPluginData.experiences.find(el => el.playgroundId == playgroundId);
 }
 
-function load(data) {
+function loadFormattedXML(data) {
   const workspace = _Blockly.getMainWorkspace();
 
   try {
@@ -60,10 +59,20 @@ function load(data) {
   return false;
 }
 
+function addSaveBtnObserver() {
+  const observer = new MutationObserver(highlightSaveBtn);
+  const mutationEvents = {
+    childList: true,
+    subtree: true
+  };
+
+  observer.observe(document.body, mutationEvents);
+}
+
 function highlightSaveBtn() {
   let saveBtn = document.querySelector('[aria-label="save button"]');
   if (!saveBtn) {
-    console.log("GitHub Plugin: Could not highlight save-button");
+    //console.log("GitHub Plugin: Could not highlight save-button");
   } else {
     saveBtn.style.backgroundColor = "red";
     saveBtn.onmouseup = saveBtnClicked;
@@ -79,19 +88,82 @@ function saveBtnClicked(event) {
 async function initGitHubPlugin() {
   octokitModule = await import("https://cdn.skypack.dev/octokit");
   loadPluginData();
-  let actionBtnWrapper = document.querySelector("#action-buttons-wrapper");
-  if (!actionBtnWrapper) {
-    console.error("could not inject commit function for save button!");
-  } else {
-    actionBtnWrapper.onmouseenter = highlightSaveBtn;
-    highlightSaveBtn();
-  }
+  addSaveBtnObserver();
+  highlightSaveBtn();
 }
 
 function askForRepoSetup() {
   if (confirm("You have not setup a repository for this experience - would you like to do so now?")) {
     setupRepository();
   }
+}
+
+function showDialog() {
+  const styleElement = document.createElement("style");
+  styleElement.setAttribute("type", "text/css");
+
+  styleElement.innerHTML = `
+        .github-plugin-modal {
+          display: none;
+          position: fixed;
+          z-index: 1000;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          overflow: auto;
+          background-color: rgb(0, 0, 0);
+          background-color: rgba(0, 0, 0, 0.4);
+      }
+
+      .github-plugin-modal-content {
+          background-color: #424242;
+          color: #fff;
+          margin: 15% auto;
+          padding: 20px;
+          border: 1px solid #888;
+          width: 80%;
+      }
+
+      .github-plugin-modal-title {
+          background-color: #26ffdf;
+          color: #000;
+          font-size: large;
+      }
+
+      .github-plugin-modal-close {
+          color: #000;
+          float: right;
+          font-size: 28px;
+          font-weight: bold;
+      }
+
+      .github-plugin-modal-close:hover,
+      .github-plugin-modal-close:focus {
+          color: black;
+          text-decoration: none;
+          cursor: pointer;
+      }
+        `;
+  document.head.appendChild(styleElement);
+  const modalDialog = document.createElement("div");
+  modalDialog.setAttribute("class", "github-plugin-modal");
+  modalDialog.setAttribute("id", "github-plugin-modal");
+  modalDialog.innerHTML = `
+  <div class="github-plugin-modal-content">
+    <span class="github-plugin-modal-title">GitHub Setup</span>
+    <span class="github-plugin-modal-close">&times;</span>
+    <p>Some text in the Modal..</p>
+    <input type="button" value="Cancel" onclick="hideDialog()"/>
+    <input type="button" value="Ok" onclick="hideDialog()"/>
+  </div>
+  `;
+  document.body.appendChild(modalDialog);
+  modalDialog.style.display = "block";
+}
+
+function hideDialog(){
+  document.getElementById('github-plugin-modal').style.display = 'none';
 }
 
 function setupRepository() {
@@ -159,7 +231,7 @@ function gitHubPull() {
         }).then((workspaceResult) => {
           console.log(JSON.stringify(workspaceResult));
           _Blockly.getMainWorkspace().clear();
-          if (!load(workspaceResult.data)) {
+          if (!loadFormattedXML(workspaceResult.data)) {
             alert("Failed to import workspace!");
           }
         }).catch((exc) => {
@@ -310,10 +382,10 @@ const gitHubCommitItem = {
 }
 
 initGitHubPlugin().then((result) => {
-  console.log("GitHub Plugin loaded.");
   _Blockly.ContextMenuRegistry.registry.register(gitHubSetupItem);
   _Blockly.ContextMenuRegistry.registry.register(gitHubPullItem);
   _Blockly.ContextMenuRegistry.registry.register(gitHubCommitItem);
+  console.log("GitHub Plugin loaded.");
 }).catch((exc) => {
   console.error("Could not load plugin:", exc);
 });

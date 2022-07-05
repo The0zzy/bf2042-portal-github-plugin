@@ -1,0 +1,270 @@
+<html>
+
+<head>
+    <style>
+        .github-plugin-modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0, 0, 0);
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .github-plugin-modal-content {
+            background-color: #424242;
+            color: #fff;
+            margin: 15% auto;
+            /*width: 80%;*/
+            width: 400px;
+        }
+
+        .github-plugin-modal-content-pane {
+            padding: 10px;
+            font-size: 16px;
+            color: #fff;
+            font-family: "Arial";
+            line-height: 36px;
+        }
+
+        #github-plugin-autocommit-options {
+            padding-left: 25px;
+        }
+
+        #github-plugin-collapsible-events {
+            cursor: pointer;
+        }
+
+        #github-plugin-autocommit-events {
+            display: none;
+            line-height: normal;
+        }
+
+        ul, li {
+            margin-top: 0px;
+            list-style: none;
+        }
+
+        .github-plugin-modal-button-pane {
+            padding: 10px;
+            text-align: center;
+        }
+
+        .github-plugin-modal-button {
+            cursor: pointer;
+            text-align: center;
+            vertical-align: baseline;
+            min-width: 164px;
+            line-height: 36px;
+            padding: 3px 10px;
+            text-transform: uppercase;
+            color: #fff;
+            background-color: #999;
+            border-radius: 0;
+            border: none;
+            box-sizing: border-box;
+            font-family: "BF_Modernista-Regular, Arial";
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .github-plugin-modal-button:hover {
+            color: #000;
+            background-color: #26ffdf;
+        }
+
+        .github-plugin-modal-button:active {
+            color: #fff;
+            background-color: #26ffdf;
+        }
+
+        .github-plugin-modal-header {
+            background-color: #26ffdf;
+            color: #000;
+            padding: 10px;
+        }
+
+        .github-plugin-modal-title {
+            background-color: #26ffdf;
+            color: #000;
+            text-transform: uppercase;
+            font-family: "BF_Modernista-Regular, Arial";
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .github-plugin-modal-close {
+            color: #000;
+            float: right;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .github-plugin-modal-close:hover,
+        .github-plugin-modal-close:focus {
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .github-plugin-loader {
+            display: inline-block;
+            border: 6px solid #999;
+            border-radius: 50%;
+            border-top: 6px solid #26ffdf;
+            width: 10px;
+            height: 10px;
+            animation: github-plugin-spinner 1s linear infinite;
+        }
+
+        @keyframes github-plugin-spinner {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+    <script type="text/javascript">
+        function showDialog() {
+            document.getElementById("github-plugin-modal").style.display = "block";
+        }
+        function hideDialog() {
+            document.getElementById("github-plugin-modal").style.display = "none";
+        }
+        function onModalClick(event) {
+            if (event.target == document.getElementById('github-plugin-modal')) {
+                hideDialog();
+            }
+        }
+        function init() {
+            document.getElementById("github-plugin-modal").addEventListener("click", onModalClick);
+            showDialog();
+        }
+
+        function toggleChangeEvents() {
+            let autoCommitEventsPanel = document.getElementById('github-plugin-autocommit-events');
+            let collapsibleSymbold = document.getElementById('github-plugin-collapsible-symbol');
+            if (autoCommitEventsPanel.style.display == "none" || autoCommitEventsPanel.style.display == "") {
+                autoCommitEventsPanel.style.display = "block";
+                collapsibleSymbold.innerHTML = "&#8722;";
+            } else {
+                autoCommitEventsPanel.style.display = "none";
+                collapsibleSymbold.innerHTML = "&#43;";
+            }
+        }
+    </script>
+</head>
+
+<body onload="init()">
+
+    <input type="button" value="Dialog" onclick="showDialog()" />
+    <div id="github-plugin-modal" class="github-plugin-modal">
+        <div class="github-plugin-modal-content">
+            <div class="github-plugin-modal-header">
+                <span class="github-plugin-modal-title">GitHub Setup</span>
+                <span class="github-plugin-modal-close" onclick="hideDialog()">X</span>
+            </div>
+            <div class="github-plugin-modal-content-pane">
+                <label for="githubPAT">Personal Access Token</label>
+                <input type="password" id="githubPAT" placeholder="personaltoken" value="personaltoken" />
+                <br />
+                <label>Repository Name</label>
+                <input type="text" id="githubRepoName" list="githubRepositories" placeholder="my-repo-name" />
+                <datalist id="githubRepositories">
+                    <option value="repo-number-one" />
+                    <option value="repo-number-two" />
+                </datalist>
+                <div id="github-plugin-modal-loader-repositories" class="github-plugin-loader"></div>
+                <br />
+
+                <input type="checkbox" id="githubAutoCommit" value="Auto-Commit" checked />
+                <label for="githubAutoCommit">Auto-Commit</label>
+                <br />
+                <div id="github-plugin-autocommit-options">
+                    <label for="githubAutoCommitCount">Commit after</label>
+                    <input type="number" value="25" size="4" maxlength="4" /> changes
+                    <br />
+                    <span id="github-plugin-collapsible-events" onclick="toggleChangeEvents()">
+                        <b id="github-plugin-collapsible-symbol">&#43;</b> Changes to consider
+                    </span>
+                    <br />
+                    <div id="github-plugin-autocommit-events">
+                        <input type="checkbox" id="BLOCK_ALL" value="BLOCK_ALL" checked />
+                        <label for="BLOCK_ALL">Blocks</label>
+                        <ul>
+                            <li>
+                                <input type="checkbox" id="BLOCK_CHANGE" value="BLOCK_CHANGE" checked />
+                                <label for="BLOCK_CHANGE">Change</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="BLOCK_CREATE" value="BLOCK_CREATE" checked />
+                                <label for="BLOCK_CREATE">Create</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="BLOCK_DELETE" value="BLOCK_DELETE" checked />
+                                <label for="BLOCK_DELETE">Delete</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="BLOCK_DRAG" value="BLOCK_DRAG" checked />
+                                <label for="BLOCK_DRAG">Drag</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="BLOCK_MOVE" value="BLOCK_MOVE" checked />
+                                <label for="BLOCK_MOVE">Move</label>
+                            </li>
+                        </ul>
+                        <input type="checkbox" id="COMMENT_ALL" value="COMMENT_ALL" checked />
+                        <label for="COMMENT_ALL">Comments</label>
+                        <ul>
+                            <li>
+                                <input type="checkbox" id="COMMENT_CHANGE" value="COMMENT_CHANGE" checked />
+                                <label for="COMMENT_CHANGE">Change</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="COMMENT_CREATE" value="COMMENT_CREATE" checked />
+                                <label for="COMMENT_CREATE">Create</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="COMMENT_DELETE" value="COMMENT_DELETE" checked />
+                                <label for="COMMENT_DELETE">Delete</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="COMMENT_MOVE" value="COMMENT_MOVE" checked />
+                                <label for="COMMENT_MOVE">Move</label>
+                            </li>
+                        </ul>
+                        <input type="checkbox" id="VAR_ALL" value="VAR_ALL" checked />
+                        <label for="VAR_ALL">Variables</label>
+                        <ul>
+                            <li>
+                                <input type="checkbox" id="VAR_CREATE" value="VAR_CREATE" checked />
+                                <label for="VAR_CREATE">Create</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="VAR_DELETE" value="VAR_DELETE" checked />
+                                <label for="VAR_DELETE">Delete</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="VAR_RENAME" value="VAR_RENAME" checked />
+                                <label for="VAR_RENAME">Rename</label>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="github-plugin-modal-button-pane">
+                <input type="button" class="github-plugin-modal-button" value="Cancel" onclick="hideDialog()" />
+                <input type="button" class="github-plugin-modal-button" value="Ok" onclick="hideDialog()" />
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
