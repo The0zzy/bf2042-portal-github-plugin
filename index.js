@@ -1,6 +1,11 @@
 const pluginID = "bf2042-portal-github-plugin";
-const plugin = BF2042Portal.Plugins.getPlugin(pluginID);
-const userAgent = plugin.manifest.id + "/" + plugin.manifest.version;
+let plugin = {
+  manifest: {
+    id: pluginID,
+    version: "0.0.2"
+  }
+};
+let userAgent = plugin.manifest.id + "/" + plugin.manifest.version;
 let octokit;
 let gitHubPluginData = {
   experiences: [
@@ -11,8 +16,12 @@ let gitHubPluginData = {
       workspacePath: "workspace.xml",
       auth: {},
       commitOnSave: true,
+      autoCommit: true,
+      autoCommitChanges: 25,
+      autoCommitEvents: []
     }
-  ]
+  ],
+  version: plugin.manifest.version
 }
 
 function loadPluginData() {
@@ -86,6 +95,12 @@ function saveBtnClicked(event) {
 }
 
 async function initGitHubPlugin() {
+  try {
+    plugin = BF2042Portal.Plugins.getPlugin(pluginID);
+    userAgent = plugin.manifest.id + "/" + plugin.manifest.version;
+  } catch (exception) {
+    console.error("Couldn't get plugin data:\n", exception);
+  }
   octokitModule = await import("https://cdn.skypack.dev/octokit");
   loadPluginData();
   addSaveBtnObserver();
@@ -98,52 +113,205 @@ function askForRepoSetup() {
   }
 }
 
+function toggleElementDisplay(elementId) {
+  let element = document.getElementById('elementId');
+  if (element.style.display == "none" || element.style.display == "") {
+    element.style.display = "block";
+  } else {
+    element.style.display = "none";
+  }
+}
+
+function showElement(elementId) {
+  let element = document.getElementById('elementId');
+  element.style.display = "block";
+}
+
+function hideElement(elementId) {
+  let element = document.getElementById('elementId');
+  element.style.display = "none";
+}
+
+function showDialogSimple() {
+  document.getElementById("github-plugin-modal").style.display = "block";
+}
+function hideDialog() {
+  document.getElementById("github-plugin-modal").style.display = "none";
+}
+function onModalClick(event) {
+  if (event.target == document.getElementById('github-plugin-modal')) {
+    hideDialog();
+  }
+}
+
+function autoCommitChange(autoCommitElement) {
+  if (!autoCommitElement.checked) {
+    document.querySelectorAll("#github-plugin-autocommit-options input").forEach((element) => { element.disabled = true });
+    document.querySelectorAll("#github-plugin-autocommit-options select").forEach((element) => { element.disabled = true });
+  } else {
+    document.querySelectorAll("#github-plugin-autocommit-options input").forEach((element) => { element.disabled = false });
+    document.querySelectorAll("#github-plugin-autocommit-options select").forEach((element) => { element.disabled = false });
+  }
+}
+
+function initDialog() {
+  document.getElementById("github-plugin-modal").addEventListener("click", onModalClick);
+}
+
+function toggleChangeEventsDisplay() {
+  let autoCommitEventsPanel = document.getElementById('github-plugin-autocommit-events');
+  let collapsibleSymbold = document.getElementById('github-plugin-collapsible-symbol');
+  if (autoCommitEventsPanel.style.display == "none" || autoCommitEventsPanel.style.display == "") {
+    autoCommitEventsPanel.style.display = "block";
+    collapsibleSymbold.innerHTML = "&#8722;";
+  } else {
+    autoCommitEventsPanel.style.display = "none";
+    collapsibleSymbold.innerHTML = "&#43;";
+  }
+}
+
+
 function showDialog() {
   const styleElement = document.createElement("style");
   styleElement.setAttribute("type", "text/css");
-
   styleElement.innerHTML = `
-        .github-plugin-modal {
-          display: none;
-          position: fixed;
-          z-index: 1000;
-          left: 0;
-          top: 0;
-          width: 100%;
-          height: 100%;
-          overflow: auto;
-          background-color: rgb(0, 0, 0);
-          background-color: rgba(0, 0, 0, 0.4);
-      }
+  .github-plugin-modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgb(0, 0, 0);
+    background-color: rgba(0, 0, 0, 0.4);
+}
 
-      .github-plugin-modal-content {
-          background-color: #424242;
-          color: #fff;
-          margin: 15% auto;
-          padding: 20px;
-          border: 1px solid #888;
-          width: 80%;
-      }
+.github-plugin-modal-content {
+    background-color: #424242;
+    color: #fff;
+    margin: 15% auto;
+    /*width: 80%;*/
+    width: 400px;
+}
 
-      .github-plugin-modal-title {
-          background-color: #26ffdf;
-          color: #000;
-          font-size: large;
-      }
+.github-plugin-modal-content-pane {
+    padding: 10px;
+    font-size: 16px;
+    color: #fff;
+    font-family: "Arial";
+    line-height: 36px;
+}
 
-      .github-plugin-modal-close {
-          color: #000;
-          float: right;
-          font-size: 28px;
-          font-weight: bold;
-      }
+#github-plugin-autocommit-options {
+    padding-left: 25px;
+}
 
-      .github-plugin-modal-close:hover,
-      .github-plugin-modal-close:focus {
-          color: black;
-          text-decoration: none;
-          cursor: pointer;
-      }
+#github-plugin-modal-autocommit-changes {
+    width: 60px;
+}
+
+#github-plugin-collapsible-events {
+    cursor: pointer;
+}
+
+#github-plugin-autocommit-events {
+    display: none;
+    line-height: normal;
+}
+
+label {
+    color: #fff;
+}
+
+ul,
+li {
+    margin-top: 0px;
+    list-style: none;
+}
+
+.github-plugin-modal-button-pane {
+    padding: 10px;
+    text-align: center;
+}
+
+.github-plugin-modal-button {
+    cursor: pointer;
+    text-align: center;
+    vertical-align: baseline;
+    min-width: 164px;
+    line-height: 36px;
+    padding: 3px 10px;
+    text-transform: uppercase;
+    color: #fff;
+    background-color: #999;
+    border-radius: 0;
+    border: none;
+    box-sizing: border-box;
+    font-family: "BF_Modernista-Regular, Arial";
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.github-plugin-modal-button:hover {
+    color: #000;
+    background-color: #26ffdf;
+}
+
+.github-plugin-modal-button:active {
+    color: #fff;
+    background-color: #26ffdf;
+}
+
+.github-plugin-modal-header {
+    background-color: #26ffdf;
+    color: #000;
+    padding: 10px;
+}
+
+.github-plugin-modal-title {
+    background-color: #26ffdf;
+    color: #000;
+    text-transform: uppercase;
+    font-family: "BF_Modernista-Regular, Arial";
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.github-plugin-modal-close {
+    color: #000;
+    float: right;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.github-plugin-modal-close:hover,
+.github-plugin-modal-close:focus {
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.github-plugin-loader {
+    display: inline-block;
+    border: 6px solid #999;
+    border-radius: 50%;
+    border-top: 6px solid #26ffdf;
+    width: 10px;
+    height: 10px;
+    animation: github-plugin-spinner 1s linear infinite;
+}
+
+@keyframes github-plugin-spinner {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
         `;
   document.head.appendChild(styleElement);
   const modalDialog = document.createElement("div");
@@ -151,20 +319,141 @@ function showDialog() {
   modalDialog.setAttribute("id", "github-plugin-modal");
   modalDialog.innerHTML = `
   <div class="github-plugin-modal-content">
-    <span class="github-plugin-modal-title">GitHub Setup</span>
-    <span class="github-plugin-modal-close">&times;</span>
-    <p>Some text in the Modal..</p>
-    <input type="button" value="Cancel" onclick="hideDialog()"/>
-    <input type="button" value="Ok" onclick="hideDialog()"/>
-  </div>
+            <div class="github-plugin-modal-header">
+                <span class="github-plugin-modal-title">GitHub Setup</span>
+                <span class="github-plugin-modal-close" onclick="hideDialog()">X</span>
+            </div>
+            <div class="github-plugin-modal-content-pane">
+                <table>
+                    <tr>
+                        <td>
+                            <label for="githubPAT">Personal Access Token</label>
+                        </td>
+                        <td>
+                            <input type="password" id="githubPAT" placeholder="Personal Access Token" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label for="github-plugin-modal-repository">Repository Name</label>
+                        </td>
+                        <td>
+                            <select id="github-plugin-modal-repository" disabled>
+                                <option value="select">Please select...</option>
+                                <option value="repo-number-one">repo-number-one</option>
+                                <option value="repo-number-two">repo-number-two</option>
+                            </select>
+                            <div id="github-plugin-modal-loader-repositories" class="github-plugin-loader"></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label for="github-plugin-modal-branch">Branch</label></td>
+                        <td>
+                            <select id="github-plugin-modal-branch" disabled>
+                                <option value="main">main</option>
+                                <option value="master">master</option>
+                            </select>
+                            <div id="github-plugin-modal-loader-branches" class="github-plugin-loader"></div>
+                        </td>
+                    </tr>
+                </table>
+
+                <input type="checkbox" id="githubCommitOnSave" checked="true" />
+                <label for="githubCommitOnSave">Commit on Save</label>
+                <br/>
+                <input type="checkbox" id="githubAutoCommit" onchange="autoCommitChange(this)" checked="true" />
+                <label for="githubAutoCommit">Auto-Commit</label>
+                <br />
+                <div id="github-plugin-autocommit-options">
+                    <label for="githubAutoCommitCount">Commit after</label>
+                    <input type="number" value="25" size="4" maxlength="4" min="1" max="9999"
+                        id="github-plugin-modal-autocommit-changes" /> changes
+                    <br />
+                    <span id="github-plugin-collapsible-events" onclick="toggleChangeEventsDisplay()">
+                        <b id="github-plugin-collapsible-symbol">&#43;</b> Changes to consider
+                    </span>
+                    <br />
+                    <div id="github-plugin-autocommit-events">
+                        <input type="checkbox" id="BLOCK_ALL" value="BLOCK_ALL" checked />
+                        <label for="BLOCK_ALL">Blocks</label>
+                        <ul>
+                            <li>
+                                <input type="checkbox" id="BLOCK_CHANGE" value="BLOCK_CHANGE" checked />
+                                <label for="BLOCK_CHANGE">Change</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="BLOCK_CREATE" value="BLOCK_CREATE" checked />
+                                <label for="BLOCK_CREATE">Create</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="BLOCK_DELETE" value="BLOCK_DELETE" checked />
+                                <label for="BLOCK_DELETE">Delete</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="BLOCK_DRAG" value="BLOCK_DRAG" checked />
+                                <label for="BLOCK_DRAG">Drag</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="BLOCK_MOVE" value="BLOCK_MOVE" checked />
+                                <label for="BLOCK_MOVE">Move</label>
+                            </li>
+                        </ul>
+                        <input type="checkbox" id="COMMENT_ALL" value="COMMENT_ALL" checked />
+                        <label for="COMMENT_ALL">Comments</label>
+                        <ul>
+                            <li>
+                                <input type="checkbox" id="COMMENT_CHANGE" value="COMMENT_CHANGE" checked />
+                                <label for="COMMENT_CHANGE">Change</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="COMMENT_CREATE" value="COMMENT_CREATE" checked />
+                                <label for="COMMENT_CREATE">Create</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="COMMENT_DELETE" value="COMMENT_DELETE" checked />
+                                <label for="COMMENT_DELETE">Delete</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="COMMENT_MOVE" value="COMMENT_MOVE" checked />
+                                <label for="COMMENT_MOVE">Move</label>
+                            </li>
+                        </ul>
+                        <input type="checkbox" id="VAR_ALL" value="VAR_ALL" checked />
+                        <label for="VAR_ALL">Variables</label>
+                        <ul>
+                            <li>
+                                <input type="checkbox" id="VAR_CREATE" value="VAR_CREATE" checked />
+                                <label for="VAR_CREATE">Create</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="VAR_DELETE" value="VAR_DELETE" checked />
+                                <label for="VAR_DELETE">Delete</label>
+                            </li>
+                            <li>
+                                <input type="checkbox" id="VAR_RENAME" value="VAR_RENAME" checked />
+                                <label for="VAR_RENAME">Rename</label>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="github-plugin-modal-button-pane">
+                <input type="button" class="github-plugin-modal-button" value="Cancel" onclick="hideDialog()" />
+                <input type="button" class="github-plugin-modal-button" value="Ok" onclick="hideDialog()" />
+            </div>
+        </div>
   `;
   document.body.appendChild(modalDialog);
+  initDialog();
   modalDialog.style.display = "block";
 }
 
-function hideDialog(){
-  document.getElementById('github-plugin-modal').style.display = 'none';
+function hideDialog() {
+  let dialog = document.getElementById('github-plugin-modal');
+  dialog.style.display = "none";
+  document.body.removeChild(dialog);
 }
+
 
 function setupRepository() {
   let personalAccessToken;
@@ -341,51 +630,65 @@ function isRepoDefined() {
   return true;
 }
 
-
-const gitHubSetupItem = {
-  displayText: 'GitHub Setup',
-  preconditionFn: function (scope) {
-    return 'enabled';
-  },
-  callback: setupRepository,
-  scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
-  id: 'gitHubSetupItem',
-  weight: 180
-}
-
-const gitHubPullItem = {
-  displayText: 'GitHub Pull',
-  preconditionFn: function (scope) {
-    if (isRepoDefined()) {
+function gitHubSetupItem() {
+  const gitHubSetupItem = {
+    displayText: 'GitHub Setup',
+    preconditionFn: function (scope) {
       return 'enabled';
-    }
-    return 'disabled';
-  },
-  callback: gitHubPull,
-  scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
-  id: 'gitHubPullItem',
-  weight: 181
+    },
+    callback: setupRepository,
+    scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
+    id: 'gitHubSetupItem',
+    weight: 180
+  }
+  return gitHubSetupItem;
 }
 
-const gitHubCommitItem = {
-  displayText: 'GitHub Commit+Push',
-  preconditionFn: function (scope) {
-    if (isRepoDefined()) {
-      return 'enabled';
-    }
-    return 'disabled';
-  },
-  callback: gitHubCommit,
-  scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
-  id: 'gitHubCommitItem',
-  weight: 182
+function gitHubPullItem() {
+  const gitHubPullItem = {
+    displayText: 'GitHub Pull',
+    preconditionFn: function (scope) {
+      if (isRepoDefined()) {
+        return 'enabled';
+      }
+      return 'disabled';
+    },
+    callback: gitHubPull,
+    scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
+    id: 'gitHubPullItem',
+    weight: 181
+  }
+
+  return gitHubPullItem;
 }
+
+function gitHubCommitItem() {
+  const gitHubCommitItem = {
+    displayText: 'GitHub Commit+Push',
+    preconditionFn: function (scope) {
+      if (isRepoDefined()) {
+        return 'enabled';
+      }
+      return 'disabled';
+    },
+    callback: gitHubCommit,
+    scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
+    id: 'gitHubCommitItem',
+    weight: 182
+  }
+  return gitHubCommitItem;
+}
+
 
 initGitHubPlugin().then((result) => {
-  _Blockly.ContextMenuRegistry.registry.register(gitHubSetupItem);
-  _Blockly.ContextMenuRegistry.registry.register(gitHubPullItem);
-  _Blockly.ContextMenuRegistry.registry.register(gitHubCommitItem);
-  console.log("GitHub Plugin loaded.");
+  try {
+    _Blockly.ContextMenuRegistry.registry.register(gitHubSetupItem());
+    _Blockly.ContextMenuRegistry.registry.register(gitHubPullItem());
+    _Blockly.ContextMenuRegistry.registry.register(gitHubCommitItem());
+    console.log("GitHub Plugin loaded.");
+  } catch (exception) {
+    console.error("could not register blockly menu items\n", exception);
+  }
 }).catch((exc) => {
   console.error("Could not load plugin:", exc);
 });

@@ -35,6 +35,10 @@
             padding-left: 25px;
         }
 
+        #github-plugin-modal-autocommit-changes {
+            width: 60px;
+        }
+
         #github-plugin-collapsible-events {
             cursor: pointer;
         }
@@ -44,7 +48,12 @@
             line-height: normal;
         }
 
-        ul, li {
+        label {
+            color: #fff;
+        }
+
+        ul,
+        li {
             margin-top: 0px;
             list-style: none;
         }
@@ -131,38 +140,10 @@
             }
         }
     </style>
-    <script type="text/javascript">
-        function showDialog() {
-            document.getElementById("github-plugin-modal").style.display = "block";
-        }
-        function hideDialog() {
-            document.getElementById("github-plugin-modal").style.display = "none";
-        }
-        function onModalClick(event) {
-            if (event.target == document.getElementById('github-plugin-modal')) {
-                hideDialog();
-            }
-        }
-        function init() {
-            document.getElementById("github-plugin-modal").addEventListener("click", onModalClick);
-            showDialog();
-        }
-
-        function toggleChangeEvents() {
-            let autoCommitEventsPanel = document.getElementById('github-plugin-autocommit-events');
-            let collapsibleSymbold = document.getElementById('github-plugin-collapsible-symbol');
-            if (autoCommitEventsPanel.style.display == "none" || autoCommitEventsPanel.style.display == "") {
-                autoCommitEventsPanel.style.display = "block";
-                collapsibleSymbold.innerHTML = "&#8722;";
-            } else {
-                autoCommitEventsPanel.style.display = "none";
-                collapsibleSymbold.innerHTML = "&#43;";
-            }
-        }
-    </script>
+    <script type="text/javascript" src="index.js"></script>
 </head>
 
-<body onload="init()">
+<body onload="initDialog()">
 
     <input type="button" value="Dialog" onclick="showDialog()" />
     <div id="github-plugin-modal" class="github-plugin-modal">
@@ -172,26 +153,52 @@
                 <span class="github-plugin-modal-close" onclick="hideDialog()">X</span>
             </div>
             <div class="github-plugin-modal-content-pane">
-                <label for="githubPAT">Personal Access Token</label>
-                <input type="password" id="githubPAT" placeholder="personaltoken" value="personaltoken" />
-                <br />
-                <label>Repository Name</label>
-                <input type="text" id="githubRepoName" list="githubRepositories" placeholder="my-repo-name" />
-                <datalist id="githubRepositories">
-                    <option value="repo-number-one" />
-                    <option value="repo-number-two" />
-                </datalist>
-                <div id="github-plugin-modal-loader-repositories" class="github-plugin-loader"></div>
-                <br />
+                <table>
+                    <tr>
+                        <td>
+                            <label for="githubPAT">Personal Access Token</label>
+                        </td>
+                        <td>
+                            <input type="password" id="githubPAT" placeholder="Personal Access Token" />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label for="github-plugin-modal-repository">Repository Name</label>
+                        </td>
+                        <td>
+                            <select id="github-plugin-modal-repository" disabled>
+                                <option value="select">Please select...</option>
+                                <option value="repo-number-one">repo-number-one</option>
+                                <option value="repo-number-two">repo-number-two</option>
+                            </select>
+                            <div id="github-plugin-modal-loader-repositories" class="github-plugin-loader"></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><label for="github-plugin-modal-branch">Branch</label></td>
+                        <td>
+                            <select id="github-plugin-modal-branch" disabled>
+                                <option value="main">main</option>
+                                <option value="master">master</option>
+                            </select>
+                            <div id="github-plugin-modal-loader-branches" class="github-plugin-loader"></div>
+                        </td>
+                    </tr>
+                </table>
 
-                <input type="checkbox" id="githubAutoCommit" value="Auto-Commit" checked />
+                <input type="checkbox" id="githubCommitOnSave" checked="true" />
+                <label for="githubCommitOnSave">Commit on Save</label>
+                <br/>
+                <input type="checkbox" id="githubAutoCommit" onchange="autoCommitChange(this)" checked="true" />
                 <label for="githubAutoCommit">Auto-Commit</label>
                 <br />
                 <div id="github-plugin-autocommit-options">
                     <label for="githubAutoCommitCount">Commit after</label>
-                    <input type="number" value="25" size="4" maxlength="4" /> changes
+                    <input type="number" value="25" size="4" maxlength="4" min="1" max="9999"
+                        id="github-plugin-modal-autocommit-changes" /> changes
                     <br />
-                    <span id="github-plugin-collapsible-events" onclick="toggleChangeEvents()">
+                    <span id="github-plugin-collapsible-events" onclick="toggleChangeEventsDisplay()">
                         <b id="github-plugin-collapsible-symbol">&#43;</b> Changes to consider
                     </span>
                     <br />
