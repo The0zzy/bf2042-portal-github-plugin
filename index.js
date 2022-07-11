@@ -13,11 +13,12 @@ let gitHubPluginData = {
       playgroundId: "",
       personalAccessToken: "",
       repositoryName: "",
+      branch: "",
       workspacePath: "workspace.xml",
       auth: {},
       commitOnSave: true,
       autoCommit: true,
-      autoCommitChanges: 25,
+      autoCommitCount: 25,
       autoCommitEvents: []
     }
   ],
@@ -29,7 +30,7 @@ function loadPluginData() {
   console.log("GitHubPlugin - loaded plugin data.");
   if (loadedData != null) {
     loadedData = JSON.parse(loadedData);
-    if (!loadedData || !loadedData.experiences[0].playgroundId == "") {
+    if (!loadedData || !loadedData.version == plugin.manifest.version) {
       console.error("GitHub Plugin: invalid plugin data retrieved from storage.");
     } else {
       gitHubPluginData = loadedData;
@@ -53,6 +54,40 @@ function getPlaygroundID() {
 
 function getPluginDataForPlayground(playgroundId) {
   return gitHubPluginData.experiences.find(el => el.playgroundId == playgroundId);
+}
+
+function getFormattedWorkspaceXML() {
+  const workspace = _Blockly.getMainWorkspace();
+  const workspaceDOM = _Blockly.Xml.workspaceToDom(workspace, true);
+  const variablesDOM = _Blockly.Xml.variablesToDom(workspace.getAllVariables());
+  const variableElements = variablesDOM.getElementsByTagName("variable");
+  //clean up corrupted variables
+  for (let index = 0; index < variableElements.length; index++) {
+    const element = variableElements[index];
+    if (!element.getAttributeNode("type") || element.innerHTML.trim().length == 0) {
+      variablesDOM.removeChild(element);
+    }
+  }
+  workspaceDOM.removeChild(workspaceDOM.getElementsByTagName("variables")[0]);
+  workspaceDOM.insertBefore(variablesDOM, workspaceDOM.firstChild);
+  return _Blockly.Xml.domToPrettyText(workspaceDOM);
+}
+
+function downloadFile(fileData, fileName) {
+  const linkElement = document.createElement("a");
+  linkElement.setAttribute("href", fileData);
+  linkElement.setAttribute("download", fileName);
+  linkElement.style.display = "none";
+
+  document.body.appendChild(linkElement);
+  linkElement.click();
+  document.body.removeChild(linkElement);
+}
+
+function exportWorkspaceXML() {
+  const workspaceXML = getFormattedWorkspaceXML();
+  const dataUri = `data:application/xml;charset=utf-8,${encodeURIComponent(workspaceXML)}`;
+  downloadFile(dataUri, "workspace.xml");
 }
 
 function loadFormattedXML(data) {
@@ -83,13 +118,17 @@ function highlightSaveBtn() {
   if (!saveBtn) {
     //console.log("GitHub Plugin: Could not highlight save-button");
   } else {
-    saveBtn.style.backgroundColor = "red";
+    if(gitHubPluginData.commitOnSave){
+      saveBtn.style.backgroundColor = "#26ffdf";
+    }else{
+      saveBtn.style.backgroundColor = "";
+    }
     saveBtn.onmouseup = saveBtnClicked;
   }
 }
 
 function saveBtnClicked(event) {
-  if (event.button == 0) {
+  if (event.button == 0 && gitHubPluginData.commitOnSave) {
     gitHubCommit();
   }
 }
@@ -171,7 +210,7 @@ function toggleChangeEventsDisplay() {
 }
 
 
-function showDialog() {
+function showSetupDialog() {
   const styleElement = document.createElement("style");
   styleElement.setAttribute("type", "text/css");
   styleElement.innerHTML = `
@@ -454,6 +493,37 @@ function hideDialog() {
   document.body.removeChild(dialog);
 }
 
+function setupDialogConfirmed(){
+  let githubSetup = document.forms.githubSetup;
+  let pluginData = getPluginDataForPlayground(getPlaygroundID());
+  pluginData.personalAccessToken = githubSetup.pat.value;
+  pluginData.repositoryName = githubSetup.repository.value;
+  pluginData.branch = githubSetup.branch.value;
+  pluginData.commitOnSave = Boolean.parse(githubSetup.commitOnSave.checked);
+  pluginData.autoCommit = Boolean.parse(githubSetup.autoCommit.checked);
+  pluginData.autoCommitCount = githubSetup.autoCommitCount.value;
+  hideDialog();
+  highlightSaveBtn();
+}
+
+function toggleBlockEvents(){
+  const toggle = document.getElementById("BLOCK_ALL");
+  document.querySelectorAll(".blockEvent").forEach((blockEvent) => {
+    blockEvent.checked = toggle.checked;
+  });
+}
+function toggleCommentEvents(){
+  const toggle = document.getElementById("COMMENT_ALL");
+  document.querySelectorAll(".commentEvent").forEach((blockEvent) => {
+    blockEvent.checked = toggle.checked;
+  });
+}
+function toggleVarEvents(){
+  const toggle = document.getElementById("VAR_ALL");
+  document.querySelectorAll(".varEvent").forEach((blockEvent) => {
+    blockEvent.checked = toggle.checked;
+  });
+}
 
 function setupRepository() {
   let personalAccessToken;
@@ -552,22 +622,8 @@ function gitHubCommit() {
         });
       }
       let pluginDataForPlayground = getPluginDataForPlayground(getPlaygroundID());
-      const workspace = _Blockly.getMainWorkspace();
-      const workspaceDOM = _Blockly.Xml.workspaceToDom(workspace, true);
-      const variablesDOM = _Blockly.Xml.variablesToDom(workspace.getAllVariables());
-      const variableElements = variablesDOM.getElementsByTagName("variable");
-      //clean up corrupted variables
-      for (let index = 0; index < variableElements.length; index++) {
-        const element = variableElements[index];
-        if (!element.getAttributeNode("type") || element.innerHTML.trim().length == 0) {
-          variablesDOM.removeChild(element);
-        }
-      }
-      workspaceDOM.removeChild(workspaceDOM.getElementsByTagName("variables")[0]);
-      workspaceDOM.insertBefore(variablesDOM, workspaceDOM.firstChild);
-      const workspaceXML = _Blockly.Xml.domToPrettyText(workspaceDOM);
-
-      let contentString = btoa(workspaceXML);
+      
+      let contentString = btoa(getFormattedWorkspaceXML());
 
       octokit = new octokitModule.Octokit({
         auth: pluginDataForPlayground.personalAccessToken,
@@ -630,6 +686,34 @@ function isRepoDefined() {
   return true;
 }
 
+function gitHubExportItem() {
+  const gitHubSetupItem = {
+    displayText: 'Export formatted XML',
+    preconditionFn: function (scope) {
+      return 'enabled';
+    },
+    callback: exportWorkspaceXML,
+    scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
+    id: 'gitHubExportItem',
+    weight: 180
+  }
+  return gitHubSetupItem;
+}
+
+function gitHubImportItem() {
+  const gitHubSetupItem = {
+    displayText: 'Import formatted XML',
+    preconditionFn: function (scope) {
+      return 'enabled';
+    },
+    callback: setupRepository,
+    scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
+    id: 'gitHubImportItem',
+    weight: 181
+  }
+  return gitHubSetupItem;
+}
+
 function gitHubSetupItem() {
   const gitHubSetupItem = {
     displayText: 'GitHub Setup',
@@ -639,7 +723,7 @@ function gitHubSetupItem() {
     callback: setupRepository,
     scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
     id: 'gitHubSetupItem',
-    weight: 180
+    weight: 182
   }
   return gitHubSetupItem;
 }
@@ -656,7 +740,7 @@ function gitHubPullItem() {
     callback: gitHubPull,
     scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
     id: 'gitHubPullItem',
-    weight: 181
+    weight: 183
   }
 
   return gitHubPullItem;
@@ -674,7 +758,7 @@ function gitHubCommitItem() {
     callback: gitHubCommit,
     scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
     id: 'gitHubCommitItem',
-    weight: 182
+    weight: 184
   }
   return gitHubCommitItem;
 }
