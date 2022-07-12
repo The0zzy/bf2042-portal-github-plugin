@@ -3,7 +3,7 @@
 <head>
     <style>
         .github_plugin_modal_backdrop {
-            display: none;
+            display: block;
             position: fixed;
             z-index: 1;
             left: 0;
@@ -30,7 +30,7 @@
             line-height: 36px;
         }
 
-        #github_plugin_autocommit_options {
+        #github_plugin_modal_autocommit_options {
             padding-left: 25px;
         }
 
@@ -38,7 +38,7 @@
             width: 60px;
         }
 
-        #github_plugin_collapsible_events {
+        #github_plugin_modal_collapsible_events {
             cursor: pointer;
         }
 
@@ -210,8 +210,8 @@
 
 <body onload="initDialog()">
 
-    <input type="button" value="Dialog" onclick="showDialog()" />
-    <div id="github_plugin_modal_backdrop" class="github_plugin_modal">
+    <input type="button" value="Dialog" onclick="showSetupDialog()" />
+    <div id="github_plugin_modal_backdrop" class="github_plugin_modal_backdrop">
         <div class="github_plugin_modal">
             <div class="github_plugin_modal_header">
                 <span class="github_plugin_modal_title">GitHub Setup</span>
@@ -225,7 +225,9 @@
                                 <label for="github_plugin_modal_pat">Personal Access Token</label>
                             </td>
                             <td>
-                                <input type="password" id="github_plugin_modal_pat" name="pat" placeholder="Personal Access Token" />
+                                <input type="password" id="github_plugin_modal_pat" name="pat" placeholder="Personal Access Token" onblur="patChanged(this.value)"/>
+                                <input type="hidden" id="github_plugin_modal_pat_user" name="user"/>
+                                <div id="status_indicator_pat"></div>
                             </td>
                         </tr>
                         <tr>
@@ -234,22 +236,16 @@
                             </td>
                             <td>
                                 <select id="github_plugin_modal_repository" name="repository" disabled>
-                                    <option value="select">Please select...</option>
-                                    <option value="repo_number_one">repo_number_one</option>
-                                    <option value="repo_number_two">repo_number_two</option>
                                 </select>
-                                <div id="github_plugin_modal_loader_repositories" class="github_plugin_loader"></div>
+                                <div id="status_indicator_repository"></div>
                             </td>
                         </tr>
                         <tr>
                             <td><label for="github_plugin_modal_branch">Branch</label></td>
                             <td>
                                 <select id="github_plugin_modal_branch" name="branch" disabled>
-                                    <option value="select">Please select...</option>
-                                    <option value="main">main</option>
-                                    <option value="master">master</option>
                                 </select>
-                                <div id="github_plugin_modal_loader_branches" class="github_plugin_loader"></div>
+                                <div id="status_indicator_branch"></div>
                             </td>
                         </tr>
                     </table>

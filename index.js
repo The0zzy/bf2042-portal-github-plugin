@@ -118,9 +118,9 @@ function highlightSaveBtn() {
   if (!saveBtn) {
     //console.log("GitHub Plugin: Could not highlight save-button");
   } else {
-    if(gitHubPluginData.commitOnSave){
+    if (gitHubPluginData.commitOnSave) {
       saveBtn.style.backgroundColor = "#26ffdf";
-    }else{
+    } else {
       saveBtn.style.backgroundColor = "";
     }
     saveBtn.onmouseup = saveBtnClicked;
@@ -172,34 +172,34 @@ function hideElement(elementId) {
 }
 
 function showDialogSimple() {
-  document.getElementById("github-plugin-modal").style.display = "block";
+  document.getElementById("github_plugin_modal").style.display = "block";
 }
 function hideDialog() {
-  document.getElementById("github-plugin-modal").style.display = "none";
+  document.getElementById("github_plugin_modal").style.display = "none";
 }
 function onModalClick(event) {
-  if (event.target == document.getElementById('github-plugin-modal')) {
+  if (event.target == document.getElementById('github_plugin_modal_backdrop')) {
     hideDialog();
   }
 }
 
 function autoCommitChange(autoCommitElement) {
   if (!autoCommitElement.checked) {
-    document.querySelectorAll("#github-plugin-autocommit-options input").forEach((element) => { element.disabled = true });
-    document.querySelectorAll("#github-plugin-autocommit-options select").forEach((element) => { element.disabled = true });
+    document.querySelectorAll("#github_plugin_autocommit_options input").forEach((element) => { element.disabled = true });
+    document.querySelectorAll("#github_plugin_autocommit_options select").forEach((element) => { element.disabled = true });
   } else {
-    document.querySelectorAll("#github-plugin-autocommit-options input").forEach((element) => { element.disabled = false });
-    document.querySelectorAll("#github-plugin-autocommit-options select").forEach((element) => { element.disabled = false });
+    document.querySelectorAll("#github_plugin_autocommit_options input").forEach((element) => { element.disabled = false });
+    document.querySelectorAll("#github_plugin_autocommit_options select").forEach((element) => { element.disabled = false });
   }
 }
 
 function initDialog() {
-  document.getElementById("github-plugin-modal").addEventListener("click", onModalClick);
+  document.getElementById("github_plugin_modal_backdrop").addEventListener("click", onModalClick);
 }
 
 function toggleChangeEventsDisplay() {
-  let autoCommitEventsPanel = document.getElementById('github-plugin-autocommit-events');
-  let collapsibleSymbold = document.getElementById('github-plugin-collapsible-symbol');
+  let autoCommitEventsPanel = document.getElementById('github_plugin_autocommit_events');
+  let collapsibleSymbold = document.getElementById('github_plugin_collapsible_symbol');
   if (autoCommitEventsPanel.style.display == "none" || autoCommitEventsPanel.style.display == "") {
     autoCommitEventsPanel.style.display = "block";
     collapsibleSymbold.innerHTML = "&#8722;";
@@ -209,316 +209,145 @@ function toggleChangeEventsDisplay() {
   }
 }
 
-
 function showSetupDialog() {
   const styleElement = document.createElement("style");
   styleElement.setAttribute("type", "text/css");
-  styleElement.innerHTML = `
-  .github-plugin-modal {
-    display: none;
-    position: fixed;
-    z-index: 1;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgb(0, 0, 0);
-    background-color: rgba(0, 0, 0, 0.4);
-}
-
-.github-plugin-modal-content {
-    background-color: #424242;
-    color: #fff;
-    margin: 15% auto;
-    /*width: 80%;*/
-    width: 400px;
-}
-
-.github-plugin-modal-content-pane {
-    padding: 10px;
-    font-size: 16px;
-    color: #fff;
-    font-family: "Arial";
-    line-height: 36px;
-}
-
-#github-plugin-autocommit-options {
-    padding-left: 25px;
-}
-
-#github-plugin-modal-autocommit-changes {
-    width: 60px;
-}
-
-#github-plugin-collapsible-events {
-    cursor: pointer;
-}
-
-#github-plugin-autocommit-events {
-    display: none;
-    line-height: normal;
-}
-
-label {
-    color: #fff;
-}
-
-ul,
-li {
-    margin-top: 0px;
-    list-style: none;
-}
-
-.github-plugin-modal-button-pane {
-    padding: 10px;
-    text-align: center;
-}
-
-.github-plugin-modal-button {
-    cursor: pointer;
-    text-align: center;
-    vertical-align: baseline;
-    min-width: 164px;
-    line-height: 36px;
-    padding: 3px 10px;
-    text-transform: uppercase;
-    color: #fff;
-    background-color: #999;
-    border-radius: 0;
-    border: none;
-    box-sizing: border-box;
-    font-family: "BF_Modernista-Regular, Arial";
-    font-weight: bold;
-    font-size: 18px;
-}
-
-.github-plugin-modal-button:hover {
-    color: #000;
-    background-color: #26ffdf;
-}
-
-.github-plugin-modal-button:active {
-    color: #fff;
-    background-color: #26ffdf;
-}
-
-.github-plugin-modal-header {
-    background-color: #26ffdf;
-    color: #000;
-    padding: 10px;
-}
-
-.github-plugin-modal-title {
-    background-color: #26ffdf;
-    color: #000;
-    text-transform: uppercase;
-    font-family: "BF_Modernista-Regular, Arial";
-    font-weight: bold;
-    font-size: 20px;
-}
-
-.github-plugin-modal-close {
-    color: #000;
-    float: right;
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.github-plugin-modal-close:hover,
-.github-plugin-modal-close:focus {
-    color: #fff;
-    text-decoration: none;
-    cursor: pointer;
-}
-
-.github-plugin-loader {
-    display: inline-block;
-    border: 6px solid #999;
-    border-radius: 50%;
-    border-top: 6px solid #26ffdf;
-    width: 10px;
-    height: 10px;
-    animation: github-plugin-spinner 1s linear infinite;
-}
-
-@keyframes github-plugin-spinner {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(360deg);
-    }
-}
-        `;
+  styleElement.innerHTML = ``;
   document.head.appendChild(styleElement);
   const modalDialog = document.createElement("div");
-  modalDialog.setAttribute("class", "github-plugin-modal");
-  modalDialog.setAttribute("id", "github-plugin-modal");
-  modalDialog.innerHTML = `
-  <div class="github-plugin-modal-content">
-            <div class="github-plugin-modal-header">
-                <span class="github-plugin-modal-title">GitHub Setup</span>
-                <span class="github-plugin-modal-close" onclick="hideDialog()">X</span>
-            </div>
-            <div class="github-plugin-modal-content-pane">
-                <table>
-                    <tr>
-                        <td>
-                            <label for="githubPAT">Personal Access Token</label>
-                        </td>
-                        <td>
-                            <input type="password" id="githubPAT" placeholder="Personal Access Token" />
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <label for="github-plugin-modal-repository">Repository Name</label>
-                        </td>
-                        <td>
-                            <select id="github-plugin-modal-repository" disabled>
-                                <option value="select">Please select...</option>
-                                <option value="repo-number-one">repo-number-one</option>
-                                <option value="repo-number-two">repo-number-two</option>
-                            </select>
-                            <div id="github-plugin-modal-loader-repositories" class="github-plugin-loader"></div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><label for="github-plugin-modal-branch">Branch</label></td>
-                        <td>
-                            <select id="github-plugin-modal-branch" disabled>
-                                <option value="main">main</option>
-                                <option value="master">master</option>
-                            </select>
-                            <div id="github-plugin-modal-loader-branches" class="github-plugin-loader"></div>
-                        </td>
-                    </tr>
-                </table>
-
-                <input type="checkbox" id="githubCommitOnSave" checked="true" />
-                <label for="githubCommitOnSave">Commit on Save</label>
-                <br/>
-                <input type="checkbox" id="githubAutoCommit" onchange="autoCommitChange(this)" checked="true" />
-                <label for="githubAutoCommit">Auto-Commit</label>
-                <br />
-                <div id="github-plugin-autocommit-options">
-                    <label for="githubAutoCommitCount">Commit after</label>
-                    <input type="number" value="25" size="4" maxlength="4" min="1" max="9999"
-                        id="github-plugin-modal-autocommit-changes" /> changes
-                    <br />
-                    <span id="github-plugin-collapsible-events" onclick="toggleChangeEventsDisplay()">
-                        <b id="github-plugin-collapsible-symbol">&#43;</b> Changes to consider
-                    </span>
-                    <br />
-                    <div id="github-plugin-autocommit-events">
-                        <input type="checkbox" id="BLOCK_ALL" value="BLOCK_ALL" checked />
-                        <label for="BLOCK_ALL">Blocks</label>
-                        <ul>
-                            <li>
-                                <input type="checkbox" id="BLOCK_CHANGE" value="BLOCK_CHANGE" checked />
-                                <label for="BLOCK_CHANGE">Change</label>
-                            </li>
-                            <li>
-                                <input type="checkbox" id="BLOCK_CREATE" value="BLOCK_CREATE" checked />
-                                <label for="BLOCK_CREATE">Create</label>
-                            </li>
-                            <li>
-                                <input type="checkbox" id="BLOCK_DELETE" value="BLOCK_DELETE" checked />
-                                <label for="BLOCK_DELETE">Delete</label>
-                            </li>
-                            <li>
-                                <input type="checkbox" id="BLOCK_DRAG" value="BLOCK_DRAG" checked />
-                                <label for="BLOCK_DRAG">Drag</label>
-                            </li>
-                            <li>
-                                <input type="checkbox" id="BLOCK_MOVE" value="BLOCK_MOVE" checked />
-                                <label for="BLOCK_MOVE">Move</label>
-                            </li>
-                        </ul>
-                        <input type="checkbox" id="COMMENT_ALL" value="COMMENT_ALL" checked />
-                        <label for="COMMENT_ALL">Comments</label>
-                        <ul>
-                            <li>
-                                <input type="checkbox" id="COMMENT_CHANGE" value="COMMENT_CHANGE" checked />
-                                <label for="COMMENT_CHANGE">Change</label>
-                            </li>
-                            <li>
-                                <input type="checkbox" id="COMMENT_CREATE" value="COMMENT_CREATE" checked />
-                                <label for="COMMENT_CREATE">Create</label>
-                            </li>
-                            <li>
-                                <input type="checkbox" id="COMMENT_DELETE" value="COMMENT_DELETE" checked />
-                                <label for="COMMENT_DELETE">Delete</label>
-                            </li>
-                            <li>
-                                <input type="checkbox" id="COMMENT_MOVE" value="COMMENT_MOVE" checked />
-                                <label for="COMMENT_MOVE">Move</label>
-                            </li>
-                        </ul>
-                        <input type="checkbox" id="VAR_ALL" value="VAR_ALL" checked />
-                        <label for="VAR_ALL">Variables</label>
-                        <ul>
-                            <li>
-                                <input type="checkbox" id="VAR_CREATE" value="VAR_CREATE" checked />
-                                <label for="VAR_CREATE">Create</label>
-                            </li>
-                            <li>
-                                <input type="checkbox" id="VAR_DELETE" value="VAR_DELETE" checked />
-                                <label for="VAR_DELETE">Delete</label>
-                            </li>
-                            <li>
-                                <input type="checkbox" id="VAR_RENAME" value="VAR_RENAME" checked />
-                                <label for="VAR_RENAME">Rename</label>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <div class="github-plugin-modal-button-pane">
-                <input type="button" class="github-plugin-modal-button" value="Cancel" onclick="hideDialog()" />
-                <input type="button" class="github-plugin-modal-button" value="Ok" onclick="hideDialog()" />
-            </div>
-        </div>
-  `;
+  modalDialog.setAttribute("class", "github_plugin_modal_backdrop");
+  modalDialog.setAttribute("id", "github_plugin_modal_backdrop");
+  modalDialog.innerHTML = ``;
   document.body.appendChild(modalDialog);
   initDialog();
   modalDialog.style.display = "block";
 }
 
 function hideDialog() {
-  let dialog = document.getElementById('github-plugin-modal');
+  let dialog = document.getElementById('github_plugin_modal_backdrop');
   dialog.style.display = "none";
   document.body.removeChild(dialog);
 }
 
-function setupDialogConfirmed(){
+function setStatusIndicatorLoading(indicatorElement){
+  indicatorElement.innerHTML = "";
+  indicatorElement.removeAttribute("class");
+  indicatorElement.removeAttribute("style");
+  indicatorElement.setAttribute("class", "github_plugin_loader");
+}
+
+function setStatusIndicatorFailure(indicatorElement){
+  indicatorElement.innerHTML = "";
+  indicatorElement.removeAttribute("class");
+  indicatorElement.removeAttribute("style");
+  indicatorElement.setAttribute("class", "github_plugin_loader");
+}
+
+function setStatusIndicatorSuccess(indicatorElement){
+  indicatorElement.innerHTML = "";
+  indicatorElement.removeAttribute("class");
+  indicatorElement.removeAttribute("style");
+  indicatorElement.setAttribute("style", "color:#26ffdf; display: inline-block;");
+  indicatorElement.innerHTML = "&#10004;";
+}
+
+function patChanged(personalAccessToken) {
+  if (!personalAccessToken || personalAccessToken.length == 0) {
+    return;
+  }
+  setStatusIndicatorLoading(document.getElementById('status_indicator_pat'));
+  octokit = new octokitModule.Octokit({
+    auth: personalAccessToken,
+    userAgent: userAgent
+  });
+
+  octokit.rest.users.getAuthenticated().then((authResult) => {
+    console.log(JSON.stringify(authResult));
+    console.log("Logged in to GitHub: %s", authResult.data.login);
+    document.forms.githubSetup.user.value = authResult.data.login;
+    setStatusIndicatorSuccess(document.getElementById('status_indicator_pat'));
+    getRepos();
+  }).catch((exc) => {
+    console.error(exc);
+    setStatusIndicatorFailure(document.getElementById('status_indicator_pat'));
+  });
+}
+
+function getRepos() {
+  setStatusIndicatorLoading(document.getElementById('status_indicator_repository'));
+  octokit.request('GET /user/repos', {}).then((repoResult) => {
+    setStatusIndicatorSuccess(document.getElementById('status_indicator_repository'));
+    document.forms.githubSetup.repository.innerHTML = "";
+    let repoOption = document.createElement("option");
+    repoOption.setAttribute("value", "selection");
+    repoOption.innerHTML = "Please select...";
+    document.forms.githubSetup.repository.appendChild(repoOption);
+    repoResult.data.forEach((repo) => {
+      repoOption = document.createElement("option");
+      repoOption.setAttribute("value", repo.name);
+      repoOption.innerHTML = repo.name;
+      document.forms.githubSetup.repository.appendChild(repoOption);
+    });
+    document.forms.githubSetup.repository.disabled = false;
+    document.forms.githubSetup.repository.addEventListener("change", getBranches);
+  }).catch((exc) => {
+    setStatusIndicatorFailure(document.getElementById('status_indicator_repository'));
+  });
+}
+
+function getBranches(){
+  setStatusIndicatorLoading(document.getElementById('status_indicator_branch'));
+  octokit.request('GET /repos/{owner}/{repo}/branches', {
+    owner: document.forms.githubSetup.user.value,
+    repo: document.forms.githubSetup.repository.value
+  }).then((branchResult)=>{
+    setStatusIndicatorSuccess(document.getElementById('status_indicator_branch'));
+    document.forms.githubSetup.branch.innerHTML = "";
+    let branchOption = document.createElement("option");
+    branchOption.setAttribute("value", "selection");
+    branchOption.innerHTML = "Please select...";
+    document.forms.githubSetup.branch.appendChild(branchOption);
+    branchResult.data.forEach((branch) => {
+      branchOption = document.createElement("option");
+      branchOption.setAttribute("value", branch.name);
+      branchOption.innerHTML = branch.name;
+      document.forms.githubSetup.branch.appendChild(branchOption);
+    });
+    document.forms.githubSetup.branch.disabled = false;
+    
+  }).catch((exc)=>{
+    console.error(exc);
+    setStatusIndicatorFailure(document.getElementById('status_indicator_branch'));
+  });
+}
+
+function setupDialogConfirmed() {
   let githubSetup = document.forms.githubSetup;
   let pluginData = getPluginDataForPlayground(getPlaygroundID());
   pluginData.personalAccessToken = githubSetup.pat.value;
   pluginData.repositoryName = githubSetup.repository.value;
   pluginData.branch = githubSetup.branch.value;
-  pluginData.commitOnSave = Boolean.parse(githubSetup.commitOnSave.checked);
-  pluginData.autoCommit = Boolean.parse(githubSetup.autoCommit.checked);
+  pluginData.commitOnSave = githubSetup.commitOnSave.checked;
+  pluginData.autoCommit = githubSetup.autoCommit.checked;
   pluginData.autoCommitCount = githubSetup.autoCommitCount.value;
+  storePluginData();
   hideDialog();
   highlightSaveBtn();
 }
 
-function toggleBlockEvents(){
+function toggleBlockEvents() {
   const toggle = document.getElementById("BLOCK_ALL");
   document.querySelectorAll(".blockEvent").forEach((blockEvent) => {
     blockEvent.checked = toggle.checked;
   });
 }
-function toggleCommentEvents(){
+function toggleCommentEvents() {
   const toggle = document.getElementById("COMMENT_ALL");
   document.querySelectorAll(".commentEvent").forEach((blockEvent) => {
     blockEvent.checked = toggle.checked;
   });
 }
-function toggleVarEvents(){
+function toggleVarEvents() {
   const toggle = document.getElementById("VAR_ALL");
   document.querySelectorAll(".varEvent").forEach((blockEvent) => {
     blockEvent.checked = toggle.checked;
@@ -622,7 +451,7 @@ function gitHubCommit() {
         });
       }
       let pluginDataForPlayground = getPluginDataForPlayground(getPlaygroundID());
-      
+
       let contentString = btoa(getFormattedWorkspaceXML());
 
       octokit = new octokitModule.Octokit({
