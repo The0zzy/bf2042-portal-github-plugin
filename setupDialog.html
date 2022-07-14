@@ -48,6 +48,7 @@
         }
 
         label {
+            line-height: normal;
             color: #fff;
         }
 
@@ -55,6 +56,10 @@
         li {
             margin-top: 0px;
             list-style: none;
+        }
+
+        br {
+            line-height: normal;
         }
 
         .github_plugin_modal_button_pane {
@@ -208,53 +213,72 @@
     <script type="text/javascript">//https://wiki.selfhtml.org/wiki/JavaScript/Tutorials/Eigene_modale_Dialogfenster#Polyfill </script>
 </head>
 
-<body onload="initDialog()">
+<body onload="showDialogSimple()">
 
-    <input type="button" value="Dialog" onclick="showSetupDialog()" />
+    <input type="button" value="Dialog" onclick="showDialogSimple()" />
     <div id="github_plugin_modal_backdrop" class="github_plugin_modal_backdrop">
         <div class="github_plugin_modal">
             <div class="github_plugin_modal_header">
                 <span class="github_plugin_modal_title">GitHub Setup</span>
-                <span class="github_plugin_modal_close" onclick="hideDialog()">X</span>
+                <span class="github_plugin_modal_close" onclick="hideSetupDialog()">X</span>
             </div>
             <div class="github_plugin_modal_content">
                 <form id="githubSetup">
-                    <table>
+                    <table width="100%">
                         <tr>
                             <td>
                                 <label for="github_plugin_modal_pat">Personal Access Token</label>
                             </td>
+                            <td></td>
+                        </tr>
+                        <tr>
                             <td>
                                 <input type="password" id="github_plugin_modal_pat" name="pat" placeholder="Personal Access Token" onblur="patChanged(this.value)"/>
                                 <input type="hidden" id="github_plugin_modal_pat_user" name="user"/>
-                                <div id="status_indicator_pat"></div>
+                            </td>
+                            <td>
+                                <div id="status_indicator_pat" class="statusIndicator"></div>
                             </td>
                         </tr>
                         <tr>
                             <td>
                                 <label for="github_plugin_modal_repository">Repository Name</label>
                             </td>
+                            <td></td>
+                        </tr>
+                        <tr>
                             <td>
                                 <select id="github_plugin_modal_repository" name="repository" disabled>
+                                    <option value="select">Please select...</option>
                                 </select>
-                                <div id="status_indicator_repository"></div>
+                            </td>
+                            <td>
+                                <div id="status_indicator_repository" class="statusIndicator"></div>
                             </td>
                         </tr>
                         <tr>
-                            <td><label for="github_plugin_modal_branch">Branch</label></td>
+                            <td>
+                                <label for="github_plugin_modal_branch">Branch</label><br/>
+                            </td>
+                            <td></td>
+                        </tr>
+                        <tr>
                             <td>
                                 <select id="github_plugin_modal_branch" name="branch" disabled>
+                                    <option value="select">Please select...</option>
                                 </select>
-                                <div id="status_indicator_branch"></div>
+                            </td>
+                            <td>
+                                <div id="status_indicator_branch" class="statusIndicator"></div>
                             </td>
                         </tr>
                     </table>
-
+                    
                     <input type="checkbox" id="github_plugin_modal_commitOnSave" name="commitOnSave" checked="true" />
                     <label for="github_plugin_modal_commitOnSave">Commit on Save</label>
                     <br />
                     <input type="checkbox" id="github_plugin_modal_autocommit" name="autoCommit" onchange="autoCommitChange(this)" checked="true" />
-                    <label for="github_plugin_modal_autocommit">Auto_Commit</label>
+                    <label for="github_plugin_modal_autocommit">Auto Commit</label>
                     <br />
                     <div id="github_plugin_modal_autocommit_options">
                         <label for="github_plugin_modal_autocommit_count">Commit after</label>
@@ -331,7 +355,7 @@
                 </form>
             </div>
             <div class="github_plugin_modal_button_pane">
-                <input type="button" class="github_plugin_modal_button" value="Cancel" onclick="hideDialog()" />
+                <input type="button" class="github_plugin_modal_button" value="Cancel" onclick="hideSetupDialog()" />
                 <input type="button" class="github_plugin_modal_button" value="Ok" onclick="setupDialogConfirmed()" />
             </div>
         </div>
