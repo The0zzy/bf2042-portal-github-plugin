@@ -12,7 +12,7 @@ let gitHubPluginData = {
     {
       playgroundId: "",
       personalAccessToken: "",
-      repository: {name:"", owner: "", branch:"", full_name:""},
+      repository: { name: "", owner: "", branch: "", full_name: "" },
       workspacePath: "workspace.xml",
       auth: {},
       commitOnSave: false,
@@ -23,6 +23,7 @@ let gitHubPluginData = {
   ],
   version: plugin.manifest.version
 }
+let changeStack = [];
 
 function loadPluginData() {
   let loadedData = localStorage.getItem(pluginID);
@@ -194,7 +195,7 @@ function autoCommitChange(autoCommitElement) {
 function initSetupDialog() {
   document.getElementById("github_plugin_modal_backdrop").addEventListener("click", onModalClick);
   let pluginData = getPluginDataForPlayground(getPlaygroundID());
-  if(pluginData.personalAccessToken && pluginData.personalAccessToken.length>0){
+  if (pluginData.personalAccessToken && pluginData.personalAccessToken.length > 0) {
     document.forms.githubSetup.pat.value = pluginData.personalAccessToken;
     /*
     statusIndicatorPat = document.getElementById("status_indicator_pat");
@@ -202,14 +203,14 @@ function initSetupDialog() {
     statusIndicatorPat.style.color = "#26ffdf";
     statusIndicatorPat.addEventListener("click", );
     */
-  }else {
+  } else {
     document.forms.githubSetup.pat.value = "";
   }
   document.forms.githubSetup.repository.value = pluginData.repository.full_name;
-  document.forms.githubSetup.repository.innerHTML = '<option value="'+pluginData.repository.full_name+'">'+pluginData.repository.full_name+'</option>';
+  document.forms.githubSetup.repository.innerHTML = '<option value="' + pluginData.repository.full_name + '">' + pluginData.repository.full_name + '</option>';
   document.forms.githubSetup.repository.disabled = true;
   document.forms.githubSetup.branch.value = pluginData.repository.branch;
-  document.forms.githubSetup.branch.innerHTML = '<option value="'+pluginData.repository.branch+'">'+pluginData.repository.branch+'</option>';
+  document.forms.githubSetup.branch.innerHTML = '<option value="' + pluginData.repository.branch + '">' + pluginData.repository.branch + '</option>';
   document.forms.githubSetup.branch.disabled = true;
   document.forms.githubSetup.commitOnSave.checked = pluginData.commitOnSave;
   document.forms.githubSetup.autoCommit.checked = pluginData.autoCommit;
@@ -234,9 +235,9 @@ function showSetupDialog() {
   styleElement.innerHTML = ``;
   document.head.appendChild(styleElement);
   let modalDialog = document.getElementById("github_plugin_modal_backdrop");
-  if(modalDialog){
+  if (modalDialog) {
     document.body.removeChild(modalDialog);
-  }else{
+  } else {
     modalDialog = document.createElement("div");
     modalDialog.setAttribute("class", "github_plugin_modal_backdrop");
     modalDialog.setAttribute("id", "github_plugin_modal_backdrop");
@@ -247,14 +248,14 @@ function showSetupDialog() {
   modalDialog.style.display = "block";
 }
 
-function setStatusIndicatorLoading(indicatorElement){
+function setStatusIndicatorLoading(indicatorElement) {
   indicatorElement.innerHTML = "";
   indicatorElement.removeAttribute("class");
   indicatorElement.removeAttribute("style");
   indicatorElement.setAttribute("class", "github_plugin_loader");
 }
 
-function setStatusIndicatorFailure(indicatorElement){
+function setStatusIndicatorFailure(indicatorElement) {
   indicatorElement.innerHTML = "";
   indicatorElement.removeAttribute("class");
   indicatorElement.removeAttribute("style");
@@ -262,7 +263,7 @@ function setStatusIndicatorFailure(indicatorElement){
   indicatorElement.innerHTML = "&cross;";
 }
 
-function setStatusIndicatorSuccess(indicatorElement){
+function setStatusIndicatorSuccess(indicatorElement) {
   indicatorElement.innerHTML = "";
   indicatorElement.removeAttribute("class");
   indicatorElement.removeAttribute("style");
@@ -303,7 +304,7 @@ function getRepos() {
     document.forms.githubSetup.repository.appendChild(repoOption);
     repoResult.data.forEach((repo) => {
       repoOption = document.createElement("option");
-      repoOption.setAttribute("value", repo.owner.login+";"+repo.name+";"+repo.full_name);
+      repoOption.setAttribute("value", repo.owner.login + ";" + repo.name + ";" + repo.full_name);
       repoOption.innerHTML = repo.full_name;
       document.forms.githubSetup.repository.appendChild(repoOption);
     });
@@ -314,12 +315,12 @@ function getRepos() {
   });
 }
 
-function getBranches(){
+function getBranches() {
   setStatusIndicatorLoading(document.getElementById('status_indicator_branch'));
   octokit.request('GET /repos/{owner}/{repo}/branches', {
     owner: document.forms.githubSetup.repository.value.split(";", 1)[0],
     repo: document.forms.githubSetup.repository.value.split(";", 2)[1]
-  }).then((branchResult)=>{
+  }).then((branchResult) => {
     setStatusIndicatorSuccess(document.getElementById('status_indicator_branch'));
     document.forms.githubSetup.branch.innerHTML = "";
     let branchOption = document.createElement("option");
@@ -333,8 +334,8 @@ function getBranches(){
       document.forms.githubSetup.branch.appendChild(branchOption);
     });
     document.forms.githubSetup.branch.disabled = false;
-    
-  }).catch((exc)=>{
+
+  }).catch((exc) => {
     console.error(exc);
     setStatusIndicatorFailure(document.getElementById('status_indicator_branch'));
   });
@@ -351,7 +352,25 @@ function setupDialogConfirmed() {
   pluginData.repository.branch = githubSetup.branch.value;
   pluginData.commitOnSave = githubSetup.commitOnSave.checked;
   pluginData.autoCommit = githubSetup.autoCommit.checked;
-  pluginData.autoCommitCount = githubSetup.autoCommitCount.value;
+  if (pluginData.autoCommit) {
+    pluginData.autoCommitCount = githubSetup.autoCommitCount.value;
+    pluginData.autoCommitEvents = [];
+    document.querySelectorAll(".blockEvent").array.forEach(element => {
+      if (element.checked) {
+        pluginData.autoCommitEvents.push(element.value);
+      }
+    });
+    document.querySelectorAll(".commentEvent").array.forEach(element => {
+      if (element.checked) {
+        pluginData.autoCommitEvents.push(element.value);
+      }
+    });
+    document.querySelectorAll(".blockEvent").array.forEach(element => {
+      if (element.checked) {
+        pluginData.autoCommitEvents.push(element.value);
+      }
+    });
+  }
   storePluginData();
   hideSetupDialog();
   highlightSaveBtn();
@@ -573,7 +592,7 @@ function gitHubSetupItem() {
     preconditionFn: function (scope) {
       return 'enabled';
     },
-    callback: setupRepository,
+    callback: showSetupDialog,
     scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
     id: 'gitHubSetupItem',
     weight: 182
