@@ -7,19 +7,20 @@ let plugin = {
 };
 let userAgent = plugin.manifest.id + "/" + plugin.manifest.version;
 let octokit;
+const defaultExperienceData = {
+  playgroundId: "",
+  personalAccessToken: "",
+  repository: { name: "", owner: "", branch: "", full_name: "" },
+  workspacePath: "workspace.xml",
+  auth: {},
+  commitOnSave: false,
+  autoCommit: false,
+  autoCommitCount: 30,
+  autoCommitEvents: []
+}
 let gitHubPluginData = {
   experiences: [
-    {
-      playgroundId: "",
-      personalAccessToken: "",
-      repository: { name: "", owner: "", branch: "", full_name: "" },
-      workspacePath: "workspace.xml",
-      auth: {},
-      commitOnSave: false,
-      autoCommit: false,
-      autoCommitCount: 30,
-      autoCommitEvents: []
-    }
+    defaultExperienceData
   ],
   version: plugin.manifest.version
 }
@@ -53,7 +54,13 @@ function getPlaygroundID() {
 }
 
 function getPluginDataForPlayground(playgroundId) {
-  return gitHubPluginData.experiences.find(el => el.playgroundId == playgroundId);
+  pluginData = gitHubPluginData.experiences.find(el => el.playgroundId == playgroundId);
+  if(!pluginData){
+    pluginData = JSON.parse(JSON.stringify(defaultExperienceData));
+    pluginData.playgroundId = playgroundId;
+    gitHubPluginData.experiences.push(pluginData);
+  }
+  return pluginData;
 }
 
 function getFormattedWorkspaceXML() {
@@ -118,7 +125,7 @@ function highlightSaveBtn() {
   if (!saveBtn) {
     //console.log("GitHub Plugin: Could not highlight save-button");
   } else {
-    if (gitHubPluginData.commitOnSave) {
+    if (getPluginDataForPlayground(getPlaygroundID()).commitOnSave) {
       saveBtn.style.backgroundColor = "#26ffdf";
     } else {
       saveBtn.style.backgroundColor = "";
@@ -152,25 +159,6 @@ function askForRepoSetup() {
   }
 }
 
-function toggleElementDisplay(elementId) {
-  let element = document.getElementById('elementId');
-  if (element.style.display == "none" || element.style.display == "") {
-    element.style.display = "block";
-  } else {
-    element.style.display = "none";
-  }
-}
-
-function showElement(elementId) {
-  let element = document.getElementById('elementId');
-  element.style.display = "block";
-}
-
-function hideElement(elementId) {
-  let element = document.getElementById('elementId');
-  element.style.display = "none";
-}
-
 function showDialogSimple() {
   document.getElementById("github_plugin_modal_backdrop").style.display = "block";
   initSetupDialog();
@@ -195,27 +183,31 @@ function autoCommitChange(autoCommitElement) {
 function initSetupDialog() {
   document.getElementById("github_plugin_modal_backdrop").addEventListener("click", onModalClick);
   let pluginData = getPluginDataForPlayground(getPlaygroundID());
-  if (pluginData.personalAccessToken && pluginData.personalAccessToken.length > 0) {
-    document.forms.githubSetup.pat.value = pluginData.personalAccessToken;
-    /*
-    statusIndicatorPat = document.getElementById("status_indicator_pat");
-    statusIndicatorPat.innerHTML = "&#8635;";
-    statusIndicatorPat.style.color = "#26ffdf";
-    statusIndicatorPat.addEventListener("click", );
-    */
-  } else {
-    document.forms.githubSetup.pat.value = "";
+  if (pluginData) {
+    if (pluginData.personalAccessToken && pluginData.personalAccessToken.length > 0) {
+      document.forms.githubSetup.pat.value = pluginData.personalAccessToken;
+      /*
+      statusIndicatorPat = document.getElementById("status_indicator_pat");
+      statusIndicatorPat.innerHTML = "&#8635;";
+      statusIndicatorPat.style.color = "#26ffdf";
+      statusIndicatorPat.style.cursor = "pointer";
+      statusIndicatorPat.addEventListener("click", document.forms.githubSetup.pat.onblur);
+      */
+    } else {
+      document.forms.githubSetup.pat.value = "";
+    }
+    document.forms.githubSetup.repository.value = pluginData.repository.full_name;
+    document.forms.githubSetup.repository.innerHTML = '<option value="' + pluginData.repository.full_name + '">' + pluginData.repository.full_name + '</option>';
+    document.forms.githubSetup.repository.disabled = true;
+    document.forms.githubSetup.branch.value = pluginData.repository.branch;
+    document.forms.githubSetup.branch.innerHTML = '<option value="' + pluginData.repository.branch + '">' + pluginData.repository.branch + '</option>';
+    document.forms.githubSetup.branch.disabled = true;
+    document.forms.githubSetup.commitOnSave.checked = pluginData.commitOnSave;
+    document.forms.githubSetup.autoCommit.checked = pluginData.autoCommit;
+    document.forms.githubSetup.autoCommitCount.value = pluginData.autoCommitCount;
   }
-  document.forms.githubSetup.repository.value = pluginData.repository.full_name;
-  document.forms.githubSetup.repository.innerHTML = '<option value="' + pluginData.repository.full_name + '">' + pluginData.repository.full_name + '</option>';
-  document.forms.githubSetup.repository.disabled = true;
-  document.forms.githubSetup.branch.value = pluginData.repository.branch;
-  document.forms.githubSetup.branch.innerHTML = '<option value="' + pluginData.repository.branch + '">' + pluginData.repository.branch + '</option>';
-  document.forms.githubSetup.branch.disabled = true;
-  document.forms.githubSetup.commitOnSave.checked = pluginData.commitOnSave;
-  document.forms.githubSetup.autoCommit.checked = pluginData.autoCommit;
-  document.forms.githubSetup.autoCommitCount.value = pluginData.autoCommitCount;
 }
+
 
 function toggleChangeEventsDisplay() {
   let autoCommitEventsPanel = document.getElementById('github_plugin_autocommit_events');
@@ -232,18 +224,18 @@ function toggleChangeEventsDisplay() {
 function showSetupDialog() {
   const styleElement = document.createElement("style");
   styleElement.setAttribute("type", "text/css");
-  styleElement.innerHTML = ``;
+  styleElement.innerHTML = `.github_plugin_modal_backdrop {display: block;position: fixed;z-index: 1;left: 0;top: 0;width: 100%;height: 100%;overflow: auto;background-color: rgb(0, 0, 0);background-color: rgba(0, 0, 0, 0.4);}.github_plugin_modal {background-color: #424242;color: #fff;margin: 15% auto;/*width: 80%;*/width: 400px;}.github_plugin_modal_content {padding: 10px;font-size: 16px;color: #fff;line-height: 36px;}#github_plugin_modal_autocommit_options {padding-left: 25px;}#github_plugin_modal_autocommit_changes {width: 60px;}#github_plugin_modal_collapsible_events {cursor: pointer;}#github_plugin_autocommit_events {display: none;line-height: normal;}label {line-height: normal;color: #fff;}ul,li {margin-top: 0px;list-style: none;}br {line-height: normal;}.github_plugin_modal_button_pane {padding: 10px;text-align: center;}.github_plugin_modal_button {cursor: pointer;text-align: center;vertical-align: baseline;min-width: 164px;line-height: 36px;padding: 3px 10px;text-transform: uppercase;color: #fff;background-color: #999;border-radius: 0;border: none;box-sizing: border-box;font-weight: bold;font-size: 18px;margin: 3px;}.github_plugin_modal_button:hover {color: #000;background-color: #26ffdf;}.github_plugin_modal_button:active {color: #fff;background-color: #26ffdf;}.github_plugin_modal_header {background-color: #26ffdf;color: #000;padding: 10px;}.github_plugin_modal_title {background-color: #26ffdf;color: #000;text-transform: uppercase;font-weight: bold;font-size: 20px;}.github_plugin_modal_close {color: #000;float: right;font-size: 20px;font-weight: bold;}.github_plugin_modal_close:hover,.github_plugin_modal_close:focus {color: #fff;text-decoration: none;cursor: pointer;}.github_plugin_loader {display: inline-block;border: 6px solid #999;border-radius: 50%;border-top: 6px solid #26ffdf;width: 10px;height: 10px;animation: github_plugin_spinner 1s linear infinite;}@keyframes github_plugin_spinner {0% {transform: rotate(0deg);}100% {transform: rotate(360deg);}}`;
   document.head.appendChild(styleElement);
   let modalDialog = document.getElementById("github_plugin_modal_backdrop");
   if (modalDialog) {
     document.body.removeChild(modalDialog);
-  } else {
-    modalDialog = document.createElement("div");
-    modalDialog.setAttribute("class", "github_plugin_modal_backdrop");
-    modalDialog.setAttribute("id", "github_plugin_modal_backdrop");
-    modalDialog.innerHTML = ``;
-    document.body.appendChild(modalDialog);
   }
+  modalDialog = document.createElement("div");
+  modalDialog.setAttribute("class", "github_plugin_modal_backdrop");
+  modalDialog.setAttribute("id", "github_plugin_modal_backdrop");
+  modalDialog.innerHTML = `<div class="github_plugin_modal"><div class="github_plugin_modal_header"><span class="github_plugin_modal_title">GitHub Setup</span><span class="github_plugin_modal_close" onclick="hideSetupDialog()">X</span></div><div class="github_plugin_modal_content"><form id="githubSetup"><table width="100%"><tr><td><label for="github_plugin_modal_pat">Personal Access Token</label></td><td></td></tr><tr><td><input type="password" id="github_plugin_modal_pat" name="pat" placeholder="Personal Access Token" onblur="patChanged(this.value)"/><input type="hidden" id="github_plugin_modal_pat_user" name="user"/></td><td><div id="status_indicator_pat" class="statusIndicator"></div></td></tr><tr><td><label for="github_plugin_modal_repository">Repository Name</label></td><td></td></tr><tr><td><select id="github_plugin_modal_repository" name="repository" disabled><option value="select">Please select...</option></select></td><td><div id="status_indicator_repository" class="statusIndicator"></div></td></tr><tr><td><label for="github_plugin_modal_branch">Branch</label><br/></td><td></td></tr><tr><td><select id="github_plugin_modal_branch" name="branch" disabled><option value="select">Please select...</option></select></td><td><div id="status_indicator_branch" class="statusIndicator"></div></td></tr></table><input type="checkbox" id="github_plugin_modal_commitOnSave" name="commitOnSave" checked="true" /><label for="github_plugin_modal_commitOnSave">Commit on Save</label><br /><input type="checkbox" id="github_plugin_modal_autocommit" name="autoCommit" onchange="autoCommitChange(this)" checked="true" /><label for="github_plugin_modal_autocommit">Auto Commit</label><br /><div id="github_plugin_modal_autocommit_options"><label for="github_plugin_modal_autocommit_count">Commit after</label><input type="number" value="25" size="4" maxlength="4" min="1" max="9999"                            id="github_plugin_modal_autocommit_count" name="autoCommitCount" /> changes                        <br /><span id="github_plugin_modal_collapsible_events" onclick="toggleChangeEventsDisplay()"><b id="github_plugin_collapsible_symbol">&#43;</b> Changes to consider                        </span><br /><div id="github_plugin_autocommit_events"><input type="checkbox" id="BLOCK_ALL" name="BLOCK_ALL" value="BLOCK_ALL" checked onchange="toggleBlockEvents()"/><label for="BLOCK_ALL">Blocks</label><ul><li><input type="checkbox" id="BLOCK_CHANGE" name="BLOCK_CHANGE" value="BLOCK_CHANGE" checked class="blockEvent"/><label for="BLOCK_CHANGE">Change</label></li><li><input type="checkbox" id="BLOCK_CREATE" name="BLOCK_CREATE" value="BLOCK_CREATE" checked class="blockEvent" /><label for="BLOCK_CREATE">Create</label></li><li><input type="checkbox" id="BLOCK_DELETE" name="BLOCK_DELETE" value="BLOCK_DELETE" checked class="blockEvent" /><label for="BLOCK_DELETE">Delete</label></li><li><input type="checkbox" id="BLOCK_DRAG" name="BLOCK_DRAG" value="BLOCK_DRAG" checked class="blockEvent" /><label for="BLOCK_DRAG">Drag</label></li><li><input type="checkbox" id="BLOCK_MOVE" name="BLOCK_MOVE" value="BLOCK_MOVE" checked class="blockEvent" /><label for="BLOCK_MOVE">Move</label></li></ul><input type="checkbox" id="COMMENT_ALL" name="COMMENT_ALL" value="COMMENT_ALL" checked onchange="toggleCommentEvents()"/><label for="COMMENT_ALL">Comments</label><ul><li><input type="checkbox" id="COMMENT_CHANGE" name="COMMENT_CHANGE" value="COMMENT_CHANGE" checked class="commentEvent" /><label for="COMMENT_CHANGE">Change</label></li><li><input type="checkbox" id="COMMENT_CREATE" name="COMMENT_CREATE" value="COMMENT_CREATE" checked class="commentEvent" /><label for="COMMENT_CREATE">Create</label></li><li><input type="checkbox" id="COMMENT_DELETE" name="COMMENT_DELETE" value="COMMENT_DELETE" checked class="commentEvent" /><label for="COMMENT_DELETE">Delete</label></li><li><input type="checkbox" id="COMMENT_MOVE" name="COMMENT_MOVE" value="COMMENT_MOVE" checked class="commentEvent" /><label for="COMMENT_MOVE">Move</label></li></ul><input type="checkbox" id="VAR_ALL" name="VAR_ALL" value="VAR_ALL" checked onchange="toggleVarEvents()" /><label for="VAR_ALL">Variables</label><ul><li><input type="checkbox" id="VAR_CREATE" name="VAR_CREATE" value="VAR_CREATE" checked class="varEvent" /><label for="VAR_CREATE">Create</label></li><li><input type="checkbox" id="VAR_DELETE" name="VAR_DELETE" value="VAR_DELETE" checked class="varEvent"/><label for="VAR_DELETE">Delete</label></li><li><input type="checkbox" id="VAR_RENAME" name="VAR_RENAME" value="VAR_RENAME" checked class="varEvent" /><label for="VAR_RENAME">Rename</label></li></ul></div></div></form></div><div class="github_plugin_modal_button_pane"><input type="button" class="github_plugin_modal_button" value="Cancel" onclick="hideSetupDialog()" /><input type="button" class="github_plugin_modal_button" value="Ok" onclick="setupDialogConfirmed()" /></div></div>`;
+  document.body.appendChild(modalDialog);
+
   initSetupDialog();
   modalDialog.style.display = "block";
 }
@@ -341,39 +333,64 @@ function getBranches() {
   });
 }
 
-function setupDialogConfirmed() {
+function isSetupDataValid() {
   let githubSetup = document.forms.githubSetup;
-  let pluginData = getPluginDataForPlayground(getPlaygroundID());
-  pluginData.personalAccessToken = githubSetup.pat.value;
-  let repoDetails = githubSetup.repository.value.split(";", 3);
-  pluginData.repository.owner = repoDetails[0];
-  pluginData.repository.name = repoDetails[1];
-  pluginData.repository.full_name = repoDetails[2];
-  pluginData.repository.branch = githubSetup.branch.value;
-  pluginData.commitOnSave = githubSetup.commitOnSave.checked;
-  pluginData.autoCommit = githubSetup.autoCommit.checked;
-  if (pluginData.autoCommit) {
-    pluginData.autoCommitCount = githubSetup.autoCommitCount.value;
-    pluginData.autoCommitEvents = [];
-    document.querySelectorAll(".blockEvent").array.forEach(element => {
-      if (element.checked) {
-        pluginData.autoCommitEvents.push(element.value);
-      }
-    });
-    document.querySelectorAll(".commentEvent").array.forEach(element => {
-      if (element.checked) {
-        pluginData.autoCommitEvents.push(element.value);
-      }
-    });
-    document.querySelectorAll(".blockEvent").array.forEach(element => {
-      if (element.checked) {
-        pluginData.autoCommitEvents.push(element.value);
-      }
-    });
+  if (!githubSetup.pat.value || !githubSetup.pat.value.length > 0) {
+    return false;
   }
-  storePluginData();
-  hideSetupDialog();
-  highlightSaveBtn();
+  if (githubSetup.repository.value && githubSetup.repository.value.length > 0) {
+    let repoDetails = githubSetup.repository.value.split(";");
+    if (!repoDetails.length == 3) {
+      return false;
+    }
+  } else {
+    return false;
+  }
+  if (!githubSetup.branch.value || !githubSetup.branch.value.length > 0) {
+    return false;
+  }
+  return true;
+}
+
+function setupDialogConfirmed() {
+  if (isSetupDataValid()) {
+    let githubSetup = document.forms.githubSetup;
+    let pluginData = getPluginDataForPlayground(getPlaygroundID());
+    pluginData.personalAccessToken = githubSetup.pat.value;
+    let repoDetails = githubSetup.repository.value.split(";", 3);
+    pluginData.repository.owner = repoDetails[0];
+    pluginData.repository.name = repoDetails[1];
+    pluginData.repository.full_name = repoDetails[2];
+    pluginData.repository.branch = githubSetup.branch.value;
+    pluginData.commitOnSave = githubSetup.commitOnSave.checked;
+    pluginData.autoCommit = githubSetup.autoCommit.checked;
+    if (pluginData.autoCommit) {
+      pluginData.autoCommitCount = githubSetup.autoCommitCount.value;
+      pluginData.autoCommitEvents = [];
+      document.querySelectorAll(".blockEvent").array.forEach(element => {
+        if (element.checked) {
+          pluginData.autoCommitEvents.push(element.value);
+        }
+      });
+      document.querySelectorAll(".commentEvent").array.forEach(element => {
+        if (element.checked) {
+          pluginData.autoCommitEvents.push(element.value);
+        }
+      });
+      document.querySelectorAll(".blockEvent").array.forEach(element => {
+        if (element.checked) {
+          pluginData.autoCommitEvents.push(element.value);
+        }
+      });
+    }
+    storePluginData();
+    hideSetupDialog();
+    highlightSaveBtn();
+  } else {
+    alert("Setup data is missing or incorrect.");
+  }
+
+
 }
 
 function toggleBlockEvents() {
@@ -552,7 +569,8 @@ function gitHubCommit() {
 }
 
 function isRepoDefined() {
-  if (!getPluginDataForPlayground(getPlaygroundID())) {
+  let pluginData = getPluginDataForPlayground(getPlaygroundID());
+  if (!pluginData.repository.owner) {
     return false;
   }
   return true;
