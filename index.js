@@ -55,7 +55,7 @@ function getPlaygroundID() {
 
 function getPluginDataForPlayground(playgroundId) {
   pluginData = gitHubPluginData.experiences.find(el => el.playgroundId == playgroundId);
-  if(!pluginData){
+  if (!pluginData) {
     pluginData = JSON.parse(JSON.stringify(defaultExperienceData));
     pluginData.playgroundId = playgroundId;
     gitHubPluginData.experiences.push(pluginData);
@@ -135,7 +135,7 @@ function highlightSaveBtn() {
 }
 
 function saveBtnClicked(event) {
-  if (event.button == 0 && gitHubPluginData.commitOnSave) {
+  if (event.button == 0 && getPluginDataForPlayground(getPlaygroundID()).commitOnSave) {
     gitHubCommit();
   }
 }
@@ -183,29 +183,22 @@ function autoCommitChange(autoCommitElement) {
 function initSetupDialog() {
   document.getElementById("github_plugin_modal_backdrop").addEventListener("click", onModalClick);
   let pluginData = getPluginDataForPlayground(getPlaygroundID());
-  if (pluginData) {
-    if (pluginData.personalAccessToken && pluginData.personalAccessToken.length > 0) {
-      document.forms.githubSetup.pat.value = pluginData.personalAccessToken;
-      /*
-      statusIndicatorPat = document.getElementById("status_indicator_pat");
-      statusIndicatorPat.innerHTML = "&#8635;";
-      statusIndicatorPat.style.color = "#26ffdf";
-      statusIndicatorPat.style.cursor = "pointer";
-      statusIndicatorPat.addEventListener("click", document.forms.githubSetup.pat.onblur);
-      */
-    } else {
-      document.forms.githubSetup.pat.value = "";
-    }
-    document.forms.githubSetup.repository.value = pluginData.repository.full_name;
-    document.forms.githubSetup.repository.innerHTML = '<option value="' + pluginData.repository.full_name + '">' + pluginData.repository.full_name + '</option>';
-    document.forms.githubSetup.repository.disabled = true;
-    document.forms.githubSetup.branch.value = pluginData.repository.branch;
-    document.forms.githubSetup.branch.innerHTML = '<option value="' + pluginData.repository.branch + '">' + pluginData.repository.branch + '</option>';
-    document.forms.githubSetup.branch.disabled = true;
-    document.forms.githubSetup.commitOnSave.checked = pluginData.commitOnSave;
-    document.forms.githubSetup.autoCommit.checked = pluginData.autoCommit;
-    document.forms.githubSetup.autoCommitCount.value = pluginData.autoCommitCount;
-  }
+  document.forms.githubSetup.pat.value = pluginData.personalAccessToken;
+  statusIndicatorPat = document.getElementById("status_indicator_pat");
+  statusIndicatorPat.innerHTML = "&#8635;";
+  statusIndicatorPat.style.color = "#26ffdf";
+  statusIndicatorPat.style.cursor = "pointer";
+  statusIndicatorPat.addEventListener("click", document.forms.githubSetup.pat.onblur);
+  document.forms.githubSetup.repository.value = pluginData.repository.full_name;
+  document.forms.githubSetup.repository.innerHTML = '<option value="' + pluginData.repository.full_name + '">' + pluginData.repository.full_name + '</option>';
+  document.forms.githubSetup.repository.disabled = true;
+  document.forms.githubSetup.branch.value = pluginData.repository.branch;
+  document.forms.githubSetup.branch.innerHTML = '<option value="' + pluginData.repository.branch + '">' + pluginData.repository.branch + '</option>';
+  document.forms.githubSetup.branch.disabled = true;
+  document.forms.githubSetup.commitOnSave.checked = pluginData.commitOnSave;
+  document.forms.githubSetup.autoCommit.checked = pluginData.autoCommit;
+  document.forms.githubSetup.autoCommitCount.value = pluginData.autoCommitCount;
+
 }
 
 
@@ -245,6 +238,7 @@ function setStatusIndicatorLoading(indicatorElement) {
   indicatorElement.removeAttribute("class");
   indicatorElement.removeAttribute("style");
   indicatorElement.setAttribute("class", "github_plugin_loader");
+  indicatorElement.removeEventListener("click", document.forms.githubSetup.pat.onblur);
 }
 
 function setStatusIndicatorFailure(indicatorElement) {
@@ -252,6 +246,7 @@ function setStatusIndicatorFailure(indicatorElement) {
   indicatorElement.removeAttribute("class");
   indicatorElement.removeAttribute("style");
   indicatorElement.setAttribute("style", "color:#f00; display: inline-block;");
+  indicatorElement.removeEventListener("click", document.forms.githubSetup.pat.onblur);
   indicatorElement.innerHTML = "&cross;";
 }
 
@@ -260,10 +255,12 @@ function setStatusIndicatorSuccess(indicatorElement) {
   indicatorElement.removeAttribute("class");
   indicatorElement.removeAttribute("style");
   indicatorElement.setAttribute("style", "color:#26ffdf; display: inline-block;");
+  indicatorElement.removeEventListener("click", document.forms.githubSetup.pat.onblur);
   indicatorElement.innerHTML = "&check;";
 }
 
-function patChanged(personalAccessToken) {
+function patChanged() {
+  let personalAccessToken = document.forms.githubSetup.pat.value;
   if (!personalAccessToken || personalAccessToken.length == 0) {
     return;
   }
@@ -291,7 +288,7 @@ function getRepos() {
     setStatusIndicatorSuccess(document.getElementById('status_indicator_repository'));
     document.forms.githubSetup.repository.innerHTML = "";
     let repoOption = document.createElement("option");
-    repoOption.setAttribute("value", "selection");
+    repoOption.setAttribute("value", "select");
     repoOption.innerHTML = "Please select...";
     document.forms.githubSetup.repository.appendChild(repoOption);
     repoResult.data.forEach((repo) => {
@@ -316,7 +313,7 @@ function getBranches() {
     setStatusIndicatorSuccess(document.getElementById('status_indicator_branch'));
     document.forms.githubSetup.branch.innerHTML = "";
     let branchOption = document.createElement("option");
-    branchOption.setAttribute("value", "selection");
+    branchOption.setAttribute("value", "select");
     branchOption.innerHTML = "Please select...";
     document.forms.githubSetup.branch.appendChild(branchOption);
     branchResult.data.forEach((branch) => {
@@ -340,13 +337,13 @@ function isSetupDataValid() {
   }
   if (githubSetup.repository.value && githubSetup.repository.value.length > 0) {
     let repoDetails = githubSetup.repository.value.split(";");
-    if (!repoDetails.length == 3) {
+    if (!(repoDetails.length == 3)) {
       return false;
     }
   } else {
     return false;
   }
-  if (!githubSetup.branch.value || !githubSetup.branch.value.length > 0) {
+  if (!githubSetup.branch.value || !githubSetup.branch.value.length > 0 || githubSetup.branch.value == "select") {
     return false;
   }
   return true;
