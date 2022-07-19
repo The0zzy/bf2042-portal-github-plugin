@@ -153,16 +153,6 @@ async function initGitHubPlugin() {
   highlightSaveBtn();
 }
 
-function askForRepoSetup() {
-  if (confirm("You have not setup a repository for this experience - would you like to do so now?")) {
-    setupRepository();
-  }
-}
-
-function showDialogSimple() {
-  document.getElementById("github_plugin_modal_backdrop").style.display = "block";
-  initSetupDialog();
-}
 function hideSetupDialog() {
   document.getElementById("github_plugin_modal_backdrop").style.display = "none";
 }
@@ -434,53 +424,7 @@ function toggleVarEvents() {
   });
 }
 
-function setupRepository() {
-  let personalAccessToken;
-  while (!personalAccessToken) {
-    personalAccessToken = prompt("Please enter your GitHub personal access token:");
-  }
-
-  let repository;
-  while (!repository) {
-    repository = prompt("Please enter the repository name to be used:");
-  }
-
-  octokit = new octokitModule.Octokit({
-    auth: personalAccessToken,
-    userAgent: userAgent
-  });
-
-  octokit.rest.users.getAuthenticated().then((authResult) => {
-    console.log(JSON.stringify(authResult));
-    console.log("Logged in to GitHub: %s", authResult.data.login);
-    alert("Logged in to GitHub: " + authResult.data.login);
-
-    let playgroundId = getPlaygroundID();
-    let pluginDataForPlayground = getPluginDataForPlayground(playgroundId);
-    if (!pluginDataForPlayground) {
-      gitHubPluginData.experiences.push({
-        playgroundId: playgroundId,
-        auth: authResult.data,
-        personalAccessToken: personalAccessToken,
-        repositoryName: repository,
-        workspacePath: "workspace.xml"
-      });
-    } else {
-      pluginDataForPlayground.auth = authResult.data;
-      pluginDataForPlayground.personalAccessToken = personalAccessToken;
-      pluginDataForPlayground.repositoryName = repository;
-    }
-    storePluginData();
-  }).catch((exc) => {
-    console.error(exc);
-    alert("Failed to setup Repository!");
-  });
-}
-
 function gitHubPull() {
-  if (!isRepoDefined()) {
-    askForRepoSetup();
-  }
   if (isRepoDefined()) {
     let pluginDataForPlayground = getPluginDataForPlayground(getPlaygroundID());
     if (confirm("Do you really want to reset this workspace to the latest commit of '" + pluginDataForPlayground.repositoryName + "'?")) {
@@ -493,8 +437,8 @@ function gitHubPull() {
           mediaType: {
             format: "raw",
           },
-          owner: pluginDataForPlayground.auth.login,
-          repo: pluginDataForPlayground.repositoryName,
+          owner: pluginDataForPlayground.repository.owner,
+          repo: pluginDataForPlayground.repository.name,
           path: pluginDataForPlayground.workspacePath,
         }).then((workspaceResult) => {
           console.log(JSON.stringify(workspaceResult));
@@ -516,9 +460,6 @@ function gitHubPull() {
 }
 
 function gitHubCommit() {
-  if (!isRepoDefined()) {
-    askForRepoSetup();
-  }
   if (isRepoDefined()) {
     let commitMessage = prompt("Enter commit message:");
     if (commitMessage === null) {
@@ -543,17 +484,17 @@ function gitHubCommit() {
         mediaType: {
           format: "object",
         },
-        owner: pluginDataForPlayground.auth.login,
-        repo: pluginDataForPlayground.repositoryName
+        owner: pluginDataForPlayground.repository.owner,
+        repo: pluginDataForPlayground.repository.name
       }).then((result) => {
         console.log(JSON.stringify(result));
         let workspaceFile = result.data.entries.find((entry) => entry.path == pluginDataForPlayground.workspacePath);
         if (workspaceFile) {
           octokit.rest.repos.createOrUpdateFileContents({
-            owner: pluginDataForPlayground.auth.login,
-            repo: pluginDataForPlayground.repositoryName,
+            owner: pluginDataForPlayground.repository.owner,
+            repo: pluginDataForPlayground.repository.name,
             path: pluginDataForPlayground.workspacePath,
-            branch: pluginDataForPlayground.branch,
+            branch: pluginDataForPlayground.repository.branch,
             message: commitMessage,
             content: contentString,
             sha: workspaceFile.sha
@@ -567,10 +508,10 @@ function gitHubCommit() {
           });
         } else {
           octokit.rest.repos.createOrUpdateFileContents({
-            owner: pluginDataForPlayground.auth.login,
-            repo: pluginDataForPlayground.repositoryName,
+            owner: pluginDataForPlayground.repository.owner,
+            repo: pluginDataForPlayground.repository.name,
             path: pluginDataForPlayground.workspacePath,
-            branch: pluginDataForPlayground.branch,
+            branch: pluginDataForPlayground.repository.branch,
             message: commitMessage,
             content: contentString
           }).then((result1) => {
