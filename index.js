@@ -2,7 +2,7 @@ const pluginID = "bf2042-portal-github-plugin";
 let plugin = {
   manifest: {
     id: pluginID,
-    version: "0.0.2"
+    version: "0.0.3"
   }
 };
 let userAgent = plugin.manifest.id + "/" + plugin.manifest.version;
