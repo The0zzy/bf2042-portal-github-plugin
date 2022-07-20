@@ -140,6 +140,54 @@ function saveBtnClicked(event) {
   }
 }
 
+function addAutoCommitListener() {
+  _Blockly.getMainWorkspace().addChangeListener((changeEvent) => {
+    let pluginData = getPluginDataForPlayground(getPlaygroundID());
+    if (pluginData.autoCommit) {
+      if ((changeEvent.type == _Blockly.Events.BLOCK_CHANGE
+        && pluginData.autoCommitEvents.includes("BLOCK_CHANGE"))
+        || (changeEvent.type == _Blockly.Events.BLOCK_CREATE
+          && pluginData.autoCommitEvents.includes("BLOCK_CREATE"))
+        || (changeEvent.type == _Blockly.Events.BLOCK_DELETE
+          && pluginData.autoCommitEvents.includes("BLOCK_DELETE"))
+        || (changeEvent.type == _Blockly.Events.BLOCK_DRAG
+          && pluginData.autoCommitEvents.includes("BLOCK_DRAG"))
+        || (changeEvent.type == _Blockly.Events.BLOCK_MOVE
+          && pluginData.autoCommitEvents.includes("BLOCK_MOVE"))
+        || (changeEvent.type == _Blockly.Events.COMMENT_CHANGE
+          && pluginData.autoCommitEvents.includes("COMMENT_CHANGE"))
+        || (changeEvent.type == _Blockly.Events.COMMENT_CREATE
+          && pluginData.autoCommitEvents.includes("COMMENT_CREATE"))
+        || (changeEvent.type == _Blockly.Events.COMMENT_DELETE
+          && pluginData.autoCommitEvents.includes("COMMENT_DELETE"))
+        || (changeEvent.type == _Blockly.Events.COMMENT_MOVE
+          && pluginData.autoCommitEvents.includes("COMMENT_MOVE"))
+        || (changeEvent.type == _Blockly.Events.VAR_CREATE
+          && pluginData.autoCommitEvents.includes("VAR_CREATE"))
+        || (changeEvent.type == _Blockly.Events.VAR_DELETE
+          && pluginData.autoCommitEvents.includes("VAR_DELETE"))
+        || (changeEvent.type == _Blockly.Events.VAR_RENAME
+          && pluginData.autoCommitEvents.includes("VAR_RENAME"))
+      ) {
+        changeStack.push(changeEvent);
+        if (changeStack.length >= pluginData.autoCommitCount) {
+          autoCommit();
+        }
+      }
+    }
+
+  })
+}
+
+function autoCommit() {
+  let commitMessage = "auto-commit from portal website\n\nChanges:";
+  changeStack.forEach(element => {
+    commitMessage += "\n" + JSON.stringify(element.toJson());
+  });
+  changeStack = [];
+  gitHubCommit(commitMessage);
+}
+
 async function initGitHubPlugin() {
   try {
     plugin = BF2042Portal.Plugins.getPlugin(pluginID);
@@ -151,6 +199,7 @@ async function initGitHubPlugin() {
   loadPluginData();
   addSaveBtnObserver();
   highlightSaveBtn();
+  addAutoCommitListener();
 }
 
 function hideSetupDialog() {
@@ -164,7 +213,7 @@ function onModalClick(event) {
 
 function autoCommitChanged() {
   let autoCommitElement = document.getElementById("github_plugin_modal_autocommit");
-  if(autoCommitElement){
+  if (autoCommitElement) {
     if (!autoCommitElement.checked) {
       document.querySelector("#github_plugin_modal_autocommit_options").style.display = "none";
     } else {
@@ -205,11 +254,11 @@ function initSetupDialog() {
   });
   pluginData.autoCommitEvents.forEach(element => {
     document.getElementById(element).checked = true;
-    if(element.startsWith("BLOCK")){
+    if (element.startsWith("BLOCK")) {
       document.getElementById("BLOCK_ALL").checked = true;
-    }else if(element.startsWith("COMMENT")){
+    } else if (element.startsWith("COMMENT")) {
       document.getElementById("COMMENT_ALL").checked = true;
-    }else if(element.startsWith("VAR")){
+    } else if (element.startsWith("VAR")) {
       document.getElementById("VAR_ALL").checked = true;
     }
   });
@@ -459,9 +508,11 @@ function gitHubPull() {
   }
 }
 
-function gitHubCommit() {
+function gitHubCommit(commitMessage) {
   if (isRepoDefined()) {
-    let commitMessage = prompt("Enter commit message:");
+    if (!commitMessage || commitMessage === null) {
+      commitMessage = prompt("Enter commit message:");
+    }
     if (commitMessage === null) {
       return;
     } else {
