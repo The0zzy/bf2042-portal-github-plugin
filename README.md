@@ -2,7 +2,7 @@
 
 ## About
 This is a plugin for the [Battlefield Portal Browser Extension](https://github.com/LennardF1989/BF2042-Portal-Extensions) which adds the feature to pull/push your portal experience changes to GitHub repositories.
-
+The plugin utilizes the [GutHub REST API](https://docs.github.com/en/rest) with the [Octokit Javascript library](https://github.com/octokit/octokit.js) by using GitHub Personal Access Tokens.
 
 ## Install
 
@@ -19,7 +19,6 @@ https://roflkartoffelde.github.io/bf2042-portal-github-plugin/manifest.json
 
 ## How to use
 
-The plugin utilizes the [GutHub REST API](https://docs.github.com/en/rest) with the [Octokit Javascript library](https://github.com/octokit/octokit.js) by using GitHub Personal Access Tokens.
 1. [Create a GitHub Personal Access Token](https://github.com/settings/tokens) as described [here](https://docs.github.com/en/articles/creating-an-access-token-for-command-line-use).
 2. Create a new repository and initialize it
 3. Open the rule editor in one of your portal experiences 
