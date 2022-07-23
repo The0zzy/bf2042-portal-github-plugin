@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="commitDialog.css"/>
+    </head>
+    <body>
+        <div id="github_plugin_modal_backdrop" class="github_plugin_modal_backdrop">
+            <div class="github_plugin_modal">
+                <div class="github_plugin_modal_header">
+                    <span class="github_plugin_modal_title">GitHub Commit</span>
+                    <span class="github_plugin_modal_close" onclick="hideSetupDialog()">X</span>
+                </div>
+                <div class="github_plugin_modal_content">
+                    <form id="githubCommit">
+                        <textarea name="message" id="message" placeholder="Commit Message"></textarea>
+                    </form>
+                </div>
+                <div class="github_plugin_modal_button_pane">
+                    <input type="button" class="github_plugin_modal_button" value="Cancel" onclick="hideSetupDialog()" />
+                    <input type="button" class="github_plugin_modal_button" value="Ok" onclick="setupDialogConfirmed()" />
+                </div>
+            </div>
+        </div>
+    </body>
+</html>
