@@ -701,6 +701,8 @@ function gitHubCommitItem() {
 
 initGitHubPlugin().then((result) => {
   try {
+    _Blockly.ContextMenuRegistry.registry.register(gitHubExportItem());
+    _Blockly.ContextMenuRegistry.registry.register(gitHubImportItem());
     _Blockly.ContextMenuRegistry.registry.register(gitHubSetupItem());
     _Blockly.ContextMenuRegistry.registry.register(gitHubPullItem());
     _Blockly.ContextMenuRegistry.registry.register(gitHubCommitItem());
