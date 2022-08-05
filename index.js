@@ -218,7 +218,6 @@ function addAutoCommitListener() {
 
 function autoCommit() {
   let commitMessage = "auto-commit from portal website\n\nChanges:";
-  showLoadingPopup("Auto-Committing...");
   changeStack.forEach(element => {
     commitMessage += "\n" + JSON.stringify(element.toJson());
   });
@@ -540,7 +539,7 @@ function toggleVarEvents() {
 function gitHubPull() {
   if (isRepoDefined()) {
     let pluginDataForPlayground = getPluginDataForPlayground(getPlaygroundID());
-    if (confirm("Do you really want to reset this workspace to the latest commit of '" + pluginDataForPlayground.repositoryName + "'?")) {
+    if (confirm("Do you really want to reset this workspace to the latest commit of '" + pluginDataForPlayground.repository.name + "' on branch '" + pluginDataForPlayground.repository.branch + "'?")) {
       try {
         octokit = new octokitModule.Octokit({
           auth: pluginDataForPlayground.personalAccessToken,
@@ -553,6 +552,7 @@ function gitHubPull() {
           owner: pluginDataForPlayground.repository.owner,
           repo: pluginDataForPlayground.repository.name,
           path: pluginDataForPlayground.workspacePath,
+          ref: pluginDataForPlayground.repository.branch
         }).then((workspaceResult) => {
           console.log(JSON.stringify(workspaceResult));
           _Blockly.getMainWorkspace().clear();
@@ -580,6 +580,7 @@ function gitHubCommit(commitMessage) {
     if (commitMessage === null) {
       return;
     } else {
+      showLoadingPopup("Committing...");
       if (commitMessage.trim() == "") {
         commitMessage = "auto-commit from portal website\n\nChanges:";
         _Blockly.getMainWorkspace().getUndoStack().forEach(element => {
@@ -594,16 +595,18 @@ function gitHubCommit(commitMessage) {
         auth: pluginDataForPlayground.personalAccessToken,
         userAgent: userAgent
       });
-
+      
       octokit.rest.repos.getContent({
         mediaType: {
           format: "object",
         },
         owner: pluginDataForPlayground.repository.owner,
-        repo: pluginDataForPlayground.repository.name
+        repo: pluginDataForPlayground.repository.name,
+        path: pluginDataForPlayground.workspacePath,
+        ref: pluginDataForPlayground.repository.branch
       }).then((result) => {
         console.log(JSON.stringify(result));
-        let workspaceFile = result.data.entries.find((entry) => entry.path == pluginDataForPlayground.workspacePath);
+        let workspaceFile = result.data
         if (workspaceFile) {
           octokit.rest.repos.createOrUpdateFileContents({
             owner: pluginDataForPlayground.repository.owner,
@@ -622,6 +625,7 @@ function gitHubCommit(commitMessage) {
           }).catch((exc) => {
             console.error(exc);
             alert("Failed to commit!\n" + JSON.stringify(exc));
+            setTimeout(hideLoadingPopup, 1500);
           });
         } else {
           octokit.rest.repos.createOrUpdateFileContents({
@@ -640,11 +644,13 @@ function gitHubCommit(commitMessage) {
           }).catch((exc) => {
             console.error(exc);
             alert("Failed to commit!\n" + JSON.stringify(exc));
+            setTimeout(hideLoadingPopup, 1500);
           });
         }
       }).catch((e) => {
         console.error(e);
         alert("Failed to commit!\n" + JSON.stringify(e));
+        setTimeout(hideLoadingPopup, 1500);
       });
     }
   }
