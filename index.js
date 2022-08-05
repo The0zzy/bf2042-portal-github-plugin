@@ -727,7 +727,9 @@ function gitHubCommitItem() {
       }
       return 'disabled';
     },
-    callback: gitHubCommit,
+    callback: function () {
+      gitHubCommit(null);
+    },
     scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
     id: 'gitHubCommitItem',
     weight: 184
