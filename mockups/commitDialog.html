@@ -3,6 +3,7 @@
     <head>
         <link rel="stylesheet" href="commitDialog.css"/>
     </head>
+    
     <body>
         <div id="github_plugin_modal_backdrop" class="github_plugin_modal_backdrop">
             <div class="github_plugin_modal">
@@ -12,7 +13,9 @@
                 </div>
                 <div class="github_plugin_modal_content">
                     <form id="githubCommit">
-                        <textarea name="message" id="message" placeholder="Commit Message"></textarea>
+                        <input type="text" maxlength="70" placeholder="Commit Subject" id="subject" name="subject"/>
+                        <textarea name="message" id="message" name="message" placeholder="Commit Message"></textarea>
+                        <input type="button" value="Generate Message from Undo-Stack" alt="generate commit message from undo-stack"/>
                     </form>
                 </div>
                 <div class="github_plugin_modal_button_pane">

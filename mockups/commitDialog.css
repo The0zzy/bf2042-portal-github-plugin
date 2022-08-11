@@ -58,6 +58,10 @@ br {
     line-height: normal;
 }
 
+#subject {
+    width: 370px;
+}
+
 #message {
     width: 370px;
     height: 200px;
