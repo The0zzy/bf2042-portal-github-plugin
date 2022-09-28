@@ -595,7 +595,7 @@ function gitHubCommit(commitMessage) {
         auth: pluginDataForPlayground.personalAccessToken,
         userAgent: userAgent
       });
-      
+
       octokit.rest.repos.getContent({
         mediaType: {
           format: "object",
@@ -648,9 +648,30 @@ function gitHubCommit(commitMessage) {
           });
         }
       }).catch((e) => {
-        console.error(e);
-        alert("Failed to commit!\n" + JSON.stringify(e));
-        setTimeout(hideLoadingPopup, 1500);
+        if (e.status && e.status == 404) {
+          octokit.rest.repos.createOrUpdateFileContents({
+            owner: pluginDataForPlayground.repository.owner,
+            repo: pluginDataForPlayground.repository.name,
+            path: pluginDataForPlayground.workspacePath,
+            branch: pluginDataForPlayground.repository.branch,
+            message: commitMessage,
+            content: contentString
+          }).then((result1) => {
+            let updateResultText = JSON.stringify(result1);
+            console.log("Update Result: " + updateResultText);
+            //alert("Commited: " + result1.data.commit.sha);
+            showLoadingPopup("Commited: " + result1.data.commit.sha);
+            setTimeout(hideLoadingPopup, 1500);
+          }).catch((exc) => {
+            console.error(exc);
+            alert("Failed to commit!\n" + JSON.stringify(exc));
+            setTimeout(hideLoadingPopup, 1500);
+          });
+        } else {
+          console.error(e);
+          alert("Failed to commit!\n" + JSON.stringify(e));
+          setTimeout(hideLoadingPopup, 1500);
+        }
       });
     }
   }
