@@ -2,7 +2,7 @@ const pluginID = "bf2042-portal-github-plugin";
 let plugin = {
   manifest: {
     id: pluginID,
-    version: "0.0.3"
+    version: "0.1.0"
   }
 };
 let userAgent = plugin.manifest.id + "/" + plugin.manifest.version;
@@ -597,16 +597,17 @@ function gitHubCommit(commitMessage) {
       });
 
       octokit.rest.repos.getContent({
-        mediaType: {
-          format: "object",
-        },
         owner: pluginDataForPlayground.repository.owner,
         repo: pluginDataForPlayground.repository.name,
-        path: pluginDataForPlayground.workspacePath,
         ref: pluginDataForPlayground.repository.branch
       }).then((result) => {
         console.log(JSON.stringify(result));
-        let workspaceFile = result.data
+        let workspaceFile = result;
+        result.forEach(element => {
+          if(element.path == pluginDataForPlayground.workspacePath && element.type == "file"){
+            workspaceFile = element;
+          }
+        });
         if (workspaceFile) {
           octokit.rest.repos.createOrUpdateFileContents({
             owner: pluginDataForPlayground.repository.owner,
@@ -648,30 +649,9 @@ function gitHubCommit(commitMessage) {
           });
         }
       }).catch((e) => {
-        if (e.status && e.status == 404) {
-          octokit.rest.repos.createOrUpdateFileContents({
-            owner: pluginDataForPlayground.repository.owner,
-            repo: pluginDataForPlayground.repository.name,
-            path: pluginDataForPlayground.workspacePath,
-            branch: pluginDataForPlayground.repository.branch,
-            message: commitMessage,
-            content: contentString
-          }).then((result1) => {
-            let updateResultText = JSON.stringify(result1);
-            console.log("Update Result: " + updateResultText);
-            //alert("Commited: " + result1.data.commit.sha);
-            showLoadingPopup("Commited: " + result1.data.commit.sha);
-            setTimeout(hideLoadingPopup, 1500);
-          }).catch((exc) => {
-            console.error(exc);
-            alert("Failed to commit!\n" + JSON.stringify(exc));
-            setTimeout(hideLoadingPopup, 1500);
-          });
-        } else {
           console.error(e);
           alert("Failed to commit!\n" + JSON.stringify(e));
           setTimeout(hideLoadingPopup, 1500);
-        }
       });
     }
   }
