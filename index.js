@@ -602,8 +602,8 @@ function gitHubCommit(commitMessage) {
         ref: pluginDataForPlayground.repository.branch
       }).then((result) => {
         console.log(JSON.stringify(result));
-        let workspaceFile = result;
-        result.forEach(element => {
+        let workspaceFile = null;
+        result.data.forEach(element => {
           if(element.path == pluginDataForPlayground.workspacePath && element.type == "file"){
             workspaceFile = element;
           }
