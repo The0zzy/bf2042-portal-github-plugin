@@ -31,7 +31,7 @@ function loadPluginData() {
   console.log("GitHubPlugin - loaded plugin data.");
   if (loadedData != null) {
     loadedData = JSON.parse(loadedData);
-    if (!loadedData || !loadedData.version == plugin.manifest.version) {
+    if (!loadedData || !loadedData.version === plugin.manifest.version) {
       console.error("GitHub Plugin: invalid plugin data retrieved from storage.");
     } else {
       gitHubPluginData = loadedData;
@@ -54,7 +54,7 @@ function getPlaygroundID() {
 }
 
 function getPluginDataForPlayground(playgroundId) {
-  pluginData = gitHubPluginData.experiences.find(el => el.playgroundId == playgroundId);
+  pluginData = gitHubPluginData.experiences.find(el => el.playgroundId === playgroundId);
   if (!pluginData) {
     pluginData = JSON.parse(JSON.stringify(defaultExperienceData));
     pluginData.playgroundId = playgroundId;
@@ -71,7 +71,7 @@ function getFormattedWorkspaceXML() {
   //clean up corrupted variables
   for (let index = 0; index < variableElements.length; index++) {
     const element = variableElements[index];
-    if (!element.getAttributeNode("type") || element.innerHTML.trim().length == 0) {
+    if (!element.getAttributeNode("type") || element.innerHTML.trim().length === 0) {
       variablesDOM.removeChild(element);
     }
   }
@@ -172,7 +172,7 @@ function highlightSaveBtn() {
 }
 
 function saveBtnClicked(event) {
-  if (event.button == 0 && getPluginDataForPlayground(getPlaygroundID()).commitOnSave) {
+  if (event.button === 0 && getPluginDataForPlayground(getPlaygroundID()).commitOnSave) {
     gitHubCommit();
   }
 }
@@ -181,29 +181,29 @@ function addAutoCommitListener() {
   _Blockly.getMainWorkspace().addChangeListener((changeEvent) => {
     let pluginData = getPluginDataForPlayground(getPlaygroundID());
     if (pluginData.autoCommit) {
-      if ((changeEvent.type == _Blockly.Events.BLOCK_CHANGE
+      if ((changeEvent.type === _Blockly.Events.BLOCK_CHANGE
         && pluginData.autoCommitEvents.includes("BLOCK_CHANGE"))
-        || (changeEvent.type == _Blockly.Events.BLOCK_CREATE
+        || (changeEvent.type === _Blockly.Events.BLOCK_CREATE
           && pluginData.autoCommitEvents.includes("BLOCK_CREATE"))
-        || (changeEvent.type == _Blockly.Events.BLOCK_DELETE
+        || (changeEvent.type === _Blockly.Events.BLOCK_DELETE
           && pluginData.autoCommitEvents.includes("BLOCK_DELETE"))
-        || (changeEvent.type == _Blockly.Events.BLOCK_DRAG
+        || (changeEvent.type === _Blockly.Events.BLOCK_DRAG
           && pluginData.autoCommitEvents.includes("BLOCK_DRAG"))
-        || (changeEvent.type == _Blockly.Events.BLOCK_MOVE
+        || (changeEvent.type === _Blockly.Events.BLOCK_MOVE
           && pluginData.autoCommitEvents.includes("BLOCK_MOVE"))
-        || (changeEvent.type == _Blockly.Events.COMMENT_CHANGE
+        || (changeEvent.type === _Blockly.Events.COMMENT_CHANGE
           && pluginData.autoCommitEvents.includes("COMMENT_CHANGE"))
-        || (changeEvent.type == _Blockly.Events.COMMENT_CREATE
+        || (changeEvent.type === _Blockly.Events.COMMENT_CREATE
           && pluginData.autoCommitEvents.includes("COMMENT_CREATE"))
-        || (changeEvent.type == _Blockly.Events.COMMENT_DELETE
+        || (changeEvent.type === _Blockly.Events.COMMENT_DELETE
           && pluginData.autoCommitEvents.includes("COMMENT_DELETE"))
-        || (changeEvent.type == _Blockly.Events.COMMENT_MOVE
+        || (changeEvent.type === _Blockly.Events.COMMENT_MOVE
           && pluginData.autoCommitEvents.includes("COMMENT_MOVE"))
-        || (changeEvent.type == _Blockly.Events.VAR_CREATE
+        || (changeEvent.type === _Blockly.Events.VAR_CREATE
           && pluginData.autoCommitEvents.includes("VAR_CREATE"))
-        || (changeEvent.type == _Blockly.Events.VAR_DELETE
+        || (changeEvent.type === _Blockly.Events.VAR_DELETE
           && pluginData.autoCommitEvents.includes("VAR_DELETE"))
-        || (changeEvent.type == _Blockly.Events.VAR_RENAME
+        || (changeEvent.type === _Blockly.Events.VAR_RENAME
           && pluginData.autoCommitEvents.includes("VAR_RENAME"))
       ) {
         changeStack.push(changeEvent);
@@ -269,7 +269,7 @@ function hideSetupDialog() {
   document.getElementById("github_plugin_modal_backdrop").style.display = "none";
 }
 function onModalClick(event) {
-  if (event.target == document.getElementById('github_plugin_modal_backdrop')) {
+  if (event.target === document.getElementById('github_plugin_modal_backdrop')) {
     hideSetupDialog();
   }
 }
@@ -332,7 +332,7 @@ function initSetupDialog() {
 function toggleChangeEventsDisplay() {
   let autoCommitEventsPanel = document.getElementById('github_plugin_autocommit_events');
   let collapsibleSymbold = document.getElementById('github_plugin_collapsible_symbol');
-  if (autoCommitEventsPanel.style.display == "none" || autoCommitEventsPanel.style.display == "") {
+  if (autoCommitEventsPanel.style.display === "none" || autoCommitEventsPanel.style.display === "") {
     autoCommitEventsPanel.style.display = "block";
     collapsibleSymbold.innerHTML = "&#8722;";
   } else {
@@ -388,7 +388,7 @@ function setStatusIndicatorSuccess(indicatorElement) {
 
 function patChanged() {
   let personalAccessToken = document.forms.githubSetup.pat.value;
-  if (!personalAccessToken || personalAccessToken.length == 0) {
+  if (!personalAccessToken || personalAccessToken.length === 0) {
     return;
   }
   setStatusIndicatorLoading(document.getElementById('status_indicator_pat'));
@@ -464,13 +464,13 @@ function isSetupDataValid() {
   }
   if (githubSetup.repository.value && githubSetup.repository.value.length > 0) {
     let repoDetails = githubSetup.repository.value.split(";");
-    if (!(repoDetails.length == 3)) {
+    if (!(repoDetails.length === 3)) {
       return false;
     }
   } else {
     return false;
   }
-  if (!githubSetup.branch.value || !githubSetup.branch.value.length > 0 || githubSetup.branch.value == "select") {
+  if (!githubSetup.branch.value || !githubSetup.branch.value.length > 0 || githubSetup.branch.value === "select") {
     return false;
   }
   return true;
@@ -581,7 +581,7 @@ function gitHubCommit(commitMessage) {
       return;
     } else {
       showLoadingPopup("Committing...");
-      if (commitMessage.trim() == "") {
+      if (commitMessage.trim() === "") {
         commitMessage = "auto-commit from portal website\n\nChanges:";
         _Blockly.getMainWorkspace().getUndoStack().forEach(element => {
           commitMessage += "\n" + JSON.stringify(element.toJson());
@@ -604,7 +604,7 @@ function gitHubCommit(commitMessage) {
         console.log(JSON.stringify(result));
         let workspaceFile = null;
         result.data.forEach(element => {
-          if(element.path == pluginDataForPlayground.workspacePath && element.type == "file"){
+          if(element.path === pluginDataForPlayground.workspacePath && element.type === "file"){
             workspaceFile = element;
           }
         });
