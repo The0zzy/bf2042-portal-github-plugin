@@ -58,8 +58,7 @@ let plugin = {
     },
     changeStack = [],
     showLoadingPopupLoaded = false,
-    showSetupDialogLoaded = false,
-    showSetupDialogReady = false;
+    showSetupDialogLoaded = false;
 
 function waitForElm(selector) {
     return new Promise(resolve => {
@@ -424,7 +423,6 @@ function initSetupDialog() {
             }
         });
         autoCommitChanged();
-        showSetupDialogReady = true
     }
 
 }
