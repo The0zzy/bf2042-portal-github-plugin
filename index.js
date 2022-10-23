@@ -609,12 +609,10 @@ function gitHubPull() {
 }
 
 function gitHubCommit(commitMessage) {
+    // todo: only do commit when there is an actual change in the editor
     if (isRepoDefined()) {
-        if (!commitMessage || commitMessage === null) {
+        if (!commitMessage) {
             commitMessage = prompt("Enter commit message:");
-        }
-        if (commitMessage === null) {
-            return;
         } else {
             showLoadingPopup("Committing...");
             if (commitMessage.trim() === "") {
