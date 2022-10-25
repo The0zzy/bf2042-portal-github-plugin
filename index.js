@@ -651,7 +651,8 @@ function gitHubCommit(commitMessage) {
     if (isRepoDefined()) {
         if (!commitMessage) {
             commitMessage = prompt("Enter commit message:");
-        } else {
+        }
+        if(commitMessage){
             showLoadingPopup("Committing...");
             if (commitMessage.trim() === "") {
                 commitMessage = "auto-commit from portal website\n\nChanges:";
