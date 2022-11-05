@@ -8,6 +8,7 @@
         test()
         initGitHubPlugin().then((result) => {
             try {
+                loadPluginData();
                 _Blockly.ContextMenuRegistry.registry.register(gitHubExportItem());
                 _Blockly.ContextMenuRegistry.registry.register(gitHubImportItem());
                 _Blockly.ContextMenuRegistry.registry.register(gitHubSetupItem());
@@ -32,7 +33,7 @@ const pluginID = "bf2042-portal-github-plugin";
 const defaultExperienceData = {
     playgroundId: "",
     personalAccessToken: "",
-    repository: {name: "", owner: "", branch: "", full_name: ""},
+    repository: { name: "", owner: "", branch: "", full_name: "" },
     workspacePath: "workspace.xml",
     auth: {},
     commitOnSave: false,
@@ -42,11 +43,11 @@ const defaultExperienceData = {
 }
 
 let plugin = {
-        manifest: {
-            id: pluginID,
-            version: "0.1.0"
-        }
-    },
+    manifest: {
+        id: pluginID,
+        version: "0.1.0"
+    }
+},
     userAgent = plugin.manifest.id + "/" + plugin.manifest.version,
     octokit,
     octokitModule,
@@ -131,7 +132,7 @@ function getFormattedWorkspaceXML() {
         }
     }
     const workspaceVariables = workspaceDOM.getElementsByTagName("variables") // incase there are no variables in the workspace
-    if (workspaceVariables.length){
+    if (workspaceVariables.length) {
         workspaceDOM.removeChild(workspaceVariables[0]);
     }
 
@@ -205,8 +206,8 @@ function loadFormattedXML(data) {
     return false;
 }
 
-function addSaveBtnObserver() {
-    const observer = new MutationObserver(highlightSaveBtn);
+function addPageObserver() {
+    const observer = new MutationObserver(injectGitHubPluginFeaturesToPage);
     const mutationEvents = {
         childList: true,
         subtree: true
@@ -215,18 +216,33 @@ function addSaveBtnObserver() {
     observer.observe(document.body, mutationEvents);
 }
 
+function injectGitHubPluginFeaturesToPage() {
+    try {
+        let saveBtn = document.querySelector('[aria-label="save button"]');
+        if (saveBtn) {
+            highlightSaveBtn();
+        }
+
+        if (_Blockly.getMainWorkspace()) {
+            try {
+                _Blockly.getMainWorkspace().addChangeListener(onWorkspaceChange);
+            } catch (error) {
+                console.error("Could not register change listener for blockly workspace.");
+            }
+        }
+    } catch (error) {
+        console.error("Could not register GitHub features on page.");
+    }
+}
+
 function highlightSaveBtn() {
     let saveBtn = document.querySelector('[aria-label="save button"]');
-    if (!saveBtn) {
-        //console.log("GitHub Plugin: Could not highlight save-button");
+    if (getPluginDataForPlayground(getPlaygroundID()).commitOnSave) {
+        saveBtn.style.backgroundColor = "#26ffdf";
     } else {
-        if (getPluginDataForPlayground(getPlaygroundID()).commitOnSave) {
-            saveBtn.style.backgroundColor = "#26ffdf";
-        } else {
-            saveBtn.style.backgroundColor = "";
-        }
-        saveBtn.onmouseup = saveBtnClicked;
+        saveBtn.style.backgroundColor = "";
     }
+    saveBtn.onmouseup = saveBtnClicked;
 }
 
 function saveBtnClicked(event) {
@@ -235,43 +251,40 @@ function saveBtnClicked(event) {
     }
 }
 
-function addAutoCommitListener() {
-    _Blockly.getMainWorkspace().addChangeListener((changeEvent) => {
-        let pluginData = getPluginDataForPlayground(getPlaygroundID());
-        if (pluginData.autoCommit) {
-            if ((changeEvent.type === _Blockly.Events.BLOCK_CHANGE
-                    && pluginData.autoCommitEvents.includes("BLOCK_CHANGE"))
-                || (changeEvent.type === _Blockly.Events.BLOCK_CREATE
-                    && pluginData.autoCommitEvents.includes("BLOCK_CREATE"))
-                || (changeEvent.type === _Blockly.Events.BLOCK_DELETE
-                    && pluginData.autoCommitEvents.includes("BLOCK_DELETE"))
-                || (changeEvent.type === _Blockly.Events.BLOCK_DRAG
-                    && pluginData.autoCommitEvents.includes("BLOCK_DRAG"))
-                || (changeEvent.type === _Blockly.Events.BLOCK_MOVE
-                    && pluginData.autoCommitEvents.includes("BLOCK_MOVE"))
-                || (changeEvent.type === _Blockly.Events.COMMENT_CHANGE
-                    && pluginData.autoCommitEvents.includes("COMMENT_CHANGE"))
-                || (changeEvent.type === _Blockly.Events.COMMENT_CREATE
-                    && pluginData.autoCommitEvents.includes("COMMENT_CREATE"))
-                || (changeEvent.type === _Blockly.Events.COMMENT_DELETE
-                    && pluginData.autoCommitEvents.includes("COMMENT_DELETE"))
-                || (changeEvent.type === _Blockly.Events.COMMENT_MOVE
-                    && pluginData.autoCommitEvents.includes("COMMENT_MOVE"))
-                || (changeEvent.type === _Blockly.Events.VAR_CREATE
-                    && pluginData.autoCommitEvents.includes("VAR_CREATE"))
-                || (changeEvent.type === _Blockly.Events.VAR_DELETE
-                    && pluginData.autoCommitEvents.includes("VAR_DELETE"))
-                || (changeEvent.type === _Blockly.Events.VAR_RENAME
-                    && pluginData.autoCommitEvents.includes("VAR_RENAME"))
-            ) {
-                changeStack.push(changeEvent);
-                if (changeStack.length >= pluginData.autoCommitCount) {
-                    autoCommit();
-                }
+function onWorkspaceChange(changeEvent) {
+    let pluginData = getPluginDataForPlayground(getPlaygroundID());
+    if (pluginData.autoCommit) {
+        if ((changeEvent.type === _Blockly.Events.BLOCK_CHANGE
+            && pluginData.autoCommitEvents.includes("BLOCK_CHANGE"))
+            || (changeEvent.type === _Blockly.Events.BLOCK_CREATE
+                && pluginData.autoCommitEvents.includes("BLOCK_CREATE"))
+            || (changeEvent.type === _Blockly.Events.BLOCK_DELETE
+                && pluginData.autoCommitEvents.includes("BLOCK_DELETE"))
+            || (changeEvent.type === _Blockly.Events.BLOCK_DRAG
+                && pluginData.autoCommitEvents.includes("BLOCK_DRAG"))
+            || (changeEvent.type === _Blockly.Events.BLOCK_MOVE
+                && pluginData.autoCommitEvents.includes("BLOCK_MOVE"))
+            || (changeEvent.type === _Blockly.Events.COMMENT_CHANGE
+                && pluginData.autoCommitEvents.includes("COMMENT_CHANGE"))
+            || (changeEvent.type === _Blockly.Events.COMMENT_CREATE
+                && pluginData.autoCommitEvents.includes("COMMENT_CREATE"))
+            || (changeEvent.type === _Blockly.Events.COMMENT_DELETE
+                && pluginData.autoCommitEvents.includes("COMMENT_DELETE"))
+            || (changeEvent.type === _Blockly.Events.COMMENT_MOVE
+                && pluginData.autoCommitEvents.includes("COMMENT_MOVE"))
+            || (changeEvent.type === _Blockly.Events.VAR_CREATE
+                && pluginData.autoCommitEvents.includes("VAR_CREATE"))
+            || (changeEvent.type === _Blockly.Events.VAR_DELETE
+                && pluginData.autoCommitEvents.includes("VAR_DELETE"))
+            || (changeEvent.type === _Blockly.Events.VAR_RENAME
+                && pluginData.autoCommitEvents.includes("VAR_RENAME"))
+        ) {
+            changeStack.push(changeEvent);
+            if (changeStack.length >= pluginData.autoCommitCount) {
+                autoCommit();
             }
         }
-
-    })
+    }
 }
 
 function autoCommit() {
@@ -284,10 +297,10 @@ function autoCommit() {
 }
 
 function showLoadingPopup(message) {
-    if(!message){
+    if (!message) {
         return
     }
-    if (!showLoadingPopupLoaded){
+    if (!showLoadingPopupLoaded) {
         $('<style>').load(plugin.getUrl("/resources/loadingPopup.css")).appendTo('head')
         showLoadingPopupLoaded = true
     }
@@ -310,18 +323,27 @@ async function initGitHubPlugin() {
     try {
         plugin = BF2042Portal.Plugins.getPlugin(pluginID);
         userAgent = plugin.manifest.id + "/" + plugin.manifest.version;
+        showLoadingPopup("Initializing GitHub Plugin...");
+        try {
+            octokitModule = await import("https://cdn.skypack.dev/octokit");
+        } catch (exception) {
+            console.error("Error during plugin initialization:\nCouldn't load octokit module:\n", exception);
+        }
+        try {
+            addPageObserver();
+        } catch (error) {
+            console.error("Error during plugin initialization:\nCould not add page observer:\n", exception);
+        }
+        try {
+            injectGitHubPluginFeaturesToPage();
+        } catch (error) {
+            console.error("Error during plugin initialization:\nCould not initially inject GitHub features\n", exception);
+        }
+        hideLoadingPopup();
     } catch (exception) {
-        console.error("Couldn't get plugin data:\n", exception);
+        console.error("Error during plugin initialization:\nCouldn't get plugin object of extension:\n", exception);
     }
-    showLoadingPopup("Initializing GitHub Plugin...");
-    octokitModule = await import("https://cdn.skypack.dev/octokit");
-    loadPluginData();
-    addSaveBtnObserver();
-    highlightSaveBtn();
-    addAutoCommitListener();
-    hideLoadingPopup();
 }
-
 
 function hideLoadingPopup() {
     $('#github_loader_popup').hide()
@@ -361,12 +383,12 @@ function toggleChangeEventsDisplay() {
 }
 
 function showSetupDialog() {
-    if(!showSetupDialogLoaded){
+    if (!showSetupDialogLoaded) {
         $('<style>').load(plugin.getUrl("/resources/setupDialog.css")).appendTo('head')
         showSetupDialogLoaded = true
     }
     let modalDialog = $('#github_plugin_modal_backdrop')
-    if(!modalDialog.length) {
+    if (!modalDialog.length) {
         $('<div>', {
             class: "github_plugin_modal_backdrop",
             id: "github_plugin_modal_backdrop"
@@ -381,7 +403,7 @@ function showSetupDialog() {
 
 function initSetupDialog() {
     const setupForm = document.forms.githubSetup;
-    if(setupForm){
+    if (setupForm) {
         let pluginData = getPluginDataForPlayground(getPlaygroundID());
         document.getElementById("github_plugin_modal_backdrop").addEventListener("click", onModalClick);
         setupForm.pat.value = pluginData.personalAccessToken;
@@ -480,7 +502,7 @@ function getRepos() {
     setStatusIndicatorLoading(document.getElementById('status_indicator_repository'));
     let apiEndPoint = '/user/repos';
 
-    if(!document.getElementById("list_org_repo").checked) {
+    if (!document.getElementById("list_org_repo").checked) {
         apiEndPoint += "?affiliation=owner"
     }
     octokit.request(`GET ${apiEndPoint}`, {}).then((repoResult) => {
@@ -652,7 +674,7 @@ function gitHubCommit(commitMessage) {
         if (!commitMessage) {
             commitMessage = prompt("Enter commit message:");
         }
-        if(commitMessage){
+        if (commitMessage) {
             showLoadingPopup("Committing...");
             if (commitMessage.trim() === "") {
                 commitMessage = "auto-commit from portal website\n\nChanges:";
