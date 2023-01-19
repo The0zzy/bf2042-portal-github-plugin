@@ -14,6 +14,7 @@
                 _Blockly.ContextMenuRegistry.registry.register(gitHubSetupItem());
                 _Blockly.ContextMenuRegistry.registry.register(gitHubPullItem());
                 _Blockly.ContextMenuRegistry.registry.register(gitHubCommitItem());
+                _Blockly.ContextMenuRegistry.registry.register(toggleHelpItem());
                 console.log("GitHub Plugin loaded.");
             } catch (exception) {
                 console.error("could not register blockly menu items\n", exception);
@@ -837,4 +838,25 @@ function gitHubCommitItem() {
         weight: 184
     }
     return gitHubCommitItem;
+}
+
+function toggleHelpItem() {
+    const toggleHelpItem = {
+        displayText: 'Toggle Help',
+        preconditionFn: function (scope) {
+            return 'enabled';
+        },
+        callback: function () {
+            helpButton=document.querySelector('div.blockly-help');
+            if(helpButton.style.display == "none"){
+                helpButton.style.display = "block";
+            }else{
+                helpButton.style.display = "none";
+            }
+        },
+        scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
+        id: 'toggleHelpItem',
+        weight: 190
+    }
+    return toggleHelpItem;
 }
