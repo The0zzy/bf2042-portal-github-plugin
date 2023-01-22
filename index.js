@@ -5,7 +5,6 @@
     script.type = 'text/javascript';
     script.addEventListener('load', () => {
         console.log(`jQuery ${$.fn.jquery} has been loaded successfully!`);
-        test()
         initGitHubPlugin().then((result) => {
             try {
                 loadPluginData();
@@ -26,10 +25,6 @@
     document.head.appendChild(script);
 })();
 
-function test() {
-    console.log($.fn.jquery)
-}
-
 const pluginID = "bf2042-portal-github-plugin";
 const defaultExperienceData = {
     playgroundId: "",
@@ -42,6 +37,18 @@ const defaultExperienceData = {
     autoCommitCount: 30,
     autoCommitEvents: []
 }
+const getCircularJsonReplacer = () => {
+    const seen = new WeakSet();
+    return (key, value) => {
+        if (typeof value === "object" && value !== null) {
+            if (seen.has(value)) {
+                return;
+            }
+            seen.add(value);
+        }
+        return value;
+    };
+};
 
 let plugin = {
     manifest: {
@@ -224,11 +231,48 @@ function injectGitHubPluginFeaturesToPage() {
             highlightSaveBtn();
         }
 
+        let actionButtons = document.querySelector("div.action-button-group");
+        if (actionButtons) {
+            let githubSaveButton = document.querySelector("#githubSaveButton");
+            if (!githubSaveButton) {
+                githubSaveButton = document.createElement("button");
+                githubSaveButton.id = "githubSaveButton"
+                githubSaveButton.type = "button";
+                githubSaveButton.title = "GitHub Commit"
+                githubSaveButton.style.width = "40px";
+                githubSaveButton.style.height = "40px";
+                githubSaveButton.style.backgroundColor = "#fff";
+                githubSaveButton.style.border = "none";
+                githubSaveButton.style.cursor = "pointer";
+                githubSaveButton.style.padding = "4px";
+
+                let githubSaveImage = document.createElement("img");
+                githubSaveImage.src = plugin.getUrl("/resources/github-mark-up.png");
+                githubSaveImage.width = "32";
+                githubSaveImage.height = "32";
+
+                githubSaveButton.appendChild(githubSaveImage);
+                githubSaveButton.addEventListener("click", saveBtnClicked);
+                actionButtons.appendChild(githubSaveButton);
+            }
+            if (saveBtn && isRepoDefined()) {
+                $(githubSaveButton).show();
+            } else {
+                $(githubSaveButton).hide();
+            }
+        }
         if (_Blockly.getMainWorkspace()) {
             try {
-                _Blockly.getMainWorkspace().addChangeListener(onWorkspaceChange);
+                _Blockly.getMainWorkspace().removeChangeListener(onWorkspaceChange);
+                //console.log("GitHub Plugin: removed changelistener from workspace.")
             } catch (error) {
-                console.error("Could not register change listener for blockly workspace.");
+                console.error("GitHub Plugin: Could not remove change listener for blockly workspace.\n", error);
+            }
+            try {
+                _Blockly.getMainWorkspace().addChangeListener(onWorkspaceChange);
+                //console.log("GitHub Plugin: registered changelistener for workspace.")
+            } catch (error) {
+                console.error("GitHub Plugin: Could not register change listener for blockly workspace.\n", error);
             }
         }
     } catch (error) {
@@ -244,6 +288,7 @@ function highlightSaveBtn() {
         saveBtn.style.backgroundColor = "";
     }
     saveBtn.onmouseup = saveBtnClicked;
+    let githubSaveButton = document.querySelector("#githubSaveButton");
 }
 
 function saveBtnClicked(event) {
@@ -280,10 +325,12 @@ function onWorkspaceChange(changeEvent) {
             || (changeEvent.type === _Blockly.Events.VAR_RENAME
                 && pluginData.autoCommitEvents.includes("VAR_RENAME"))
         ) {
+            //if(changeStack[changeStack.length-1] != changeEvent){
             changeStack.push(changeEvent);
             if (changeStack.length >= pluginData.autoCommitCount) {
                 autoCommit();
             }
+            //}
         }
     }
 }
@@ -291,7 +338,7 @@ function onWorkspaceChange(changeEvent) {
 function autoCommit() {
     let commitMessage = "auto-commit from portal website\n\nChanges:";
     changeStack.forEach(element => {
-        commitMessage += "\n" + JSON.stringify(element.toJson());
+        commitMessage += "\n" + JSON.stringify(element.toJson(), getCircularJsonReplacer());
     });
     changeStack = [];
     gitHubCommit(commitMessage);
@@ -847,10 +894,10 @@ function toggleHelpItem() {
             return 'enabled';
         },
         callback: function () {
-            helpButton=document.querySelector('div.blockly-help');
-            if(helpButton.style.display == "none"){
+            helpButton = document.querySelector('div.blockly-help');
+            if (helpButton.style.display == "none") {
                 helpButton.style.display = "block";
-            }else{
+            } else {
                 helpButton.style.display = "none";
             }
         },
