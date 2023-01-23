@@ -252,7 +252,7 @@ function injectGitHubPluginFeaturesToPage() {
                 githubSaveImage.height = "32";
 
                 githubSaveButton.appendChild(githubSaveImage);
-                githubSaveButton.addEventListener("click", saveBtnClicked);
+                githubSaveButton.addEventListener("click", githubSaveBtnClicked);
                 actionButtons.appendChild(githubSaveButton);
             }
             if (saveBtn && isRepoDefined()) {
@@ -288,7 +288,12 @@ function highlightSaveBtn() {
         saveBtn.style.backgroundColor = "";
     }
     saveBtn.onmouseup = saveBtnClicked;
-    let githubSaveButton = document.querySelector("#githubSaveButton");
+}
+
+function githubSaveBtnClicked(event) {
+    if (event.button === 0 && isRepoDefined()) {
+        gitHubCommit();
+    }
 }
 
 function saveBtnClicked(event) {
