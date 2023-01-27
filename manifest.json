@@ -1,7 +1,7 @@
 {
     "id": "bf2042-portal-github-plugin",
     "name": "GitHub Integration",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "author": "TheOzzy",
     "main": "index.js",
     "homepage": "https://the0zzy.github.io/bf2042-portal-github-plugin/",
