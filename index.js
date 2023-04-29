@@ -164,6 +164,46 @@
     }
   }
 
+  function importWorkspaceJSON() {
+    if (
+      confirm(
+        "WARNING:\nThis will remove all contents from the workspace and load the contents of the specified file.\n\nDo you wish to continue?"
+      )
+    ) {
+      const inputElement = document.createElement("input");
+      inputElement.setAttribute("type", "file");
+      inputElement.setAttribute("accept", ".json");
+      inputElement.style.display = "none";
+
+      inputElement.addEventListener("change", function () {
+        if (!inputElement.files || inputElement.files.length === 0) {
+          return;
+        }
+
+        const fileReader = new FileReader();
+        fileReader.onload = function (e) {
+          _Blockly.getMainWorkspace().clear();
+          try {
+            const loadData = e.target.result;
+            try {
+              loadWorkspaceJSON(loadData);
+            } catch (error) {
+              alert("Failed to import workspace!");
+            }
+          } catch (e) {
+            alert("Failed to import workspace!");
+          }
+        };
+
+        fileReader.readAsText(inputElement.files[0]);
+      });
+
+      document.body.appendChild(inputElement);
+      inputElement.click();
+      document.body.removeChild(inputElement);
+    }
+  }
+
   function loadFormattedXML(data) {
     const workspace = _Blockly.getMainWorkspace();
 
@@ -178,6 +218,10 @@
     }
 
     return false;
+  }
+
+  function loadWorkspaceJSON(workspaceJSON) {
+    _Blockly.serialization.workspaces.load(workspaceJSON);
   }
 
   function highlightSaveBtn() {
@@ -781,13 +825,15 @@
             .then((workspaceResult) => {
               console.log(JSON.stringify(workspaceResult));
               _Blockly.getMainWorkspace().clear();
-              if (!loadFormattedXML(workspaceResult.data)) {
+              try {
+                loadWorkspaceJSON(workspaceResult.data);
+              } catch (error) {
                 alert("Failed to import workspace!");
               }
             })
             .catch((exc) => {
               console.error(exc);
-              alert("Failed to load latest workspace!");
+              alert("Couldn't load latest workspace from repository!");
             });
         } catch (e) {
           console.error(e);
@@ -916,6 +962,15 @@
   };
 
   const gitHubImportItem = {
+    displayText: "Import Workspace",
+    preconditionFn: () => "enabled",
+    callback: importWorkspaceJSON,
+    scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
+    id: "gitHubImportItem",
+    weight: 181,
+  };
+
+  const gitHubImportItemXML = {
     displayText: "Import XML (legacy)",
     preconditionFn: () => "enabled",
     callback: importFormattedXMLFile,
@@ -988,6 +1043,7 @@
         try {
           loadPluginData();
           plugin.registerItem(gitHubImportItem);
+          plugin.registerItem(gitHubImportItemXML);
           plugin.registerItem(gitHubExportItem);
           plugin.registerItem(gitHubSetupItem);
           plugin.registerItem(gitHubPullItem);
