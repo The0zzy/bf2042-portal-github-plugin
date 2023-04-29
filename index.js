@@ -5,7 +5,7 @@
     playgroundId: "",
     personalAccessToken: "",
     repository: { name: "", owner: "", branch: "", full_name: "" },
-    workspacePath: "workspace.xml",
+    workspacePath: "workspace.json",
     auth: {},
     commitOnSave: false,
     autoCommit: false,
@@ -100,30 +100,10 @@
     return pluginData;
   }
 
-  function getFormattedWorkspaceXML() {
+  function getFormattedWorkspaceJSON() {
     const workspace = _Blockly.getMainWorkspace();
-    const workspaceDOM = _Blockly.Xml.workspaceToDom(workspace, true);
-    const variablesDOM = _Blockly.Xml.variablesToDom(
-      workspace.getAllVariables()
-    );
-    const variableElements = variablesDOM.getElementsByTagName("variable");
-    //clean up corrupted variables
-    for (let index = 0; index < variableElements.length; index++) {
-      const element = variableElements[index];
-      if (
-        !element.getAttributeNode("type") ||
-        element.innerHTML.trim().length === 0
-      ) {
-        variablesDOM.removeChild(element);
-      }
-    }
-    const workspaceVariables = workspaceDOM.getElementsByTagName("variables"); // incase there are no variables in the workspace
-    if (workspaceVariables.length) {
-      workspaceDOM.removeChild(workspaceVariables[0]);
-    }
-
-    workspaceDOM.insertBefore(variablesDOM, workspaceDOM.firstChild);
-    return _Blockly.Xml.domToPrettyText(workspaceDOM);
+    const jsonWorkspace = _Blockly.serialization.workspace.save(workspace);
+    return JSON.stringify(jsonWorkspace, null, 2);
   }
 
   function downloadFile(fileData, fileName) {
@@ -137,12 +117,12 @@
     document.body.removeChild(linkElement);
   }
 
-  function exportWorkspaceXML() {
-    const workspaceXML = getFormattedWorkspaceXML();
-    const dataUri = `data:application/xml;charset=utf-8,${encodeURIComponent(
+  function exportWorkspaceJSON() {
+    const workspaceXML = getFormattedWorkspaceJSON();
+    const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(
       workspaceXML
     )}`;
-    downloadFile(dataUri, "workspace.xml");
+    downloadFile(dataUri, "workspace.json");
   }
 
   function importFormattedXMLFile() {
@@ -153,7 +133,7 @@
     ) {
       const inputElement = document.createElement("input");
       inputElement.setAttribute("type", "file");
-      inputElement.setAttribute("accept", ".json");
+      inputElement.setAttribute("accept", ".xml");
       inputElement.style.display = "none";
 
       inputElement.addEventListener("change", function () {
@@ -200,17 +180,32 @@
     return false;
   }
 
-  function addPageObserver() {
-    const observer = new MutationObserver(injectGitHubPluginFeaturesToPage);
-    const mutationEvents = {
-      childList: true,
-      subtree: true,
-    };
-
-    observer.observe(document.body, mutationEvents);
+  function highlightSaveBtn() {
+    let saveBtn = document.querySelector('[aria-label="save button"]');
+    if (getPluginDataForPlayground(getPlaygroundID()).commitOnSave) {
+      saveBtn.style.backgroundColor = "#26ffdf";
+    } else {
+      saveBtn.style.backgroundColor = "";
+    }
+    saveBtn.onmouseup = saveBtnClicked;
   }
 
-  function injectGitHubPluginFeaturesToPage() {
+  function githubSaveBtnClicked(event) {
+    if (event.button === 0 && isRepoDefined()) {
+      gitHubCommit();
+    }
+  }
+
+  function saveBtnClicked(event) {
+    if (
+      event.button === 0 &&
+      getPluginDataForPlayground(getPlaygroundID()).commitOnSave
+    ) {
+      gitHubCommit();
+    }
+  }
+
+  function onWorkspaceChange(changeEvent) {
     try {
       let saveBtn = document.querySelector('[aria-label="save button"]');
       if (saveBtn) {
@@ -247,57 +242,10 @@
           $(githubSaveButton).hide();
         }
       }
-      if (_Blockly.getMainWorkspace()) {
-        try {
-          _Blockly.getMainWorkspace().removeChangeListener(onWorkspaceChange);
-          //console.log("GitHub Plugin: removed changelistener from workspace.")
-        } catch (error) {
-          console.error(
-            "GitHub Plugin: Could not remove change listener for blockly workspace.\n",
-            error
-          );
-        }
-        try {
-          _Blockly.getMainWorkspace().addChangeListener(onWorkspaceChange);
-          //console.log("GitHub Plugin: registered changelistener for workspace.")
-        } catch (error) {
-          console.error(
-            "GitHub Plugin: Could not register change listener for blockly workspace.\n",
-            error
-          );
-        }
-      }
-    } catch (error) {
-      console.error("Could not register GitHub features on page.");
+    } catch (e) {
+      console.log("ERROR - Could not add and highlight save button.");
     }
-  }
 
-  function highlightSaveBtn() {
-    let saveBtn = document.querySelector('[aria-label="save button"]');
-    if (getPluginDataForPlayground(getPlaygroundID()).commitOnSave) {
-      saveBtn.style.backgroundColor = "#26ffdf";
-    } else {
-      saveBtn.style.backgroundColor = "";
-    }
-    saveBtn.onmouseup = saveBtnClicked;
-  }
-
-  function githubSaveBtnClicked(event) {
-    if (event.button === 0 && isRepoDefined()) {
-      gitHubCommit();
-    }
-  }
-
-  function saveBtnClicked(event) {
-    if (
-      event.button === 0 &&
-      getPluginDataForPlayground(getPlaygroundID()).commitOnSave
-    ) {
-      gitHubCommit();
-    }
-  }
-
-  function onWorkspaceChange(changeEvent) {
     let pluginData = getPluginDataForPlayground(getPlaygroundID());
     if (pluginData.autoCommit) {
       if (
@@ -380,20 +328,14 @@
           exception
         );
       }
+
       try {
-        addPageObserver();
+        _Blockly.getMainWorkspace().addChangeListener(onWorkspaceChange);
+        //console.log("GitHub Plugin: registered changelistener for workspace.")
       } catch (error) {
         console.error(
-          "Error during plugin initialization:\nCould not add page observer:\n",
-          exception
-        );
-      }
-      try {
-        injectGitHubPluginFeaturesToPage();
-      } catch (error) {
-        console.error(
-          "Error during plugin initialization:\nCould not initially inject GitHub features\n",
-          exception
+          "GitHub Plugin: Could not register change listener for blockly workspace.\n",
+          error
         );
       }
       hideLoadingPopup();
@@ -876,7 +818,7 @@
           getPlaygroundID()
         );
 
-        let contentString = btoa(getFormattedWorkspaceXML());
+        let contentString = btoa(getFormattedWorkspaceJSON());
 
         octokit = new octokitModule.Octokit({
           auth: pluginDataForPlayground.personalAccessToken,
@@ -965,16 +907,16 @@
   }
 
   const gitHubExportItem = {
-    displayText: "Export formatted XML",
+    displayText: "Export Workspace",
     preconditionFn: () => "enabled",
-    callback: exportWorkspaceXML,
+    callback: exportWorkspaceJSON,
     scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
     id: "gitHubExportItem",
     weight: 180,
   };
 
   const gitHubImportItem = {
-    displayText: "Import formatted XML",
+    displayText: "Import XML (legacy)",
     preconditionFn: () => "enabled",
     callback: importFormattedXMLFile,
     scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
