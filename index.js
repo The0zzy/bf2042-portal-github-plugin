@@ -102,7 +102,7 @@
 
   function getFormattedWorkspaceJSON() {
     const workspace = _Blockly.getMainWorkspace();
-    const jsonWorkspace = _Blockly.serialization.workspace.save(workspace);
+    const jsonWorkspace = _Blockly.serialization.workspaces.save(workspace);
     return JSON.stringify(jsonWorkspace, null, 2);
   }
 
@@ -186,7 +186,7 @@
           try {
             const loadData = e.target.result;
             try {
-              loadWorkspaceJSON(loadData);
+              loadWorkspaceJSON(JSON.parse(loadData));
             } catch (error) {
               alert("Failed to import workspace!");
             }
@@ -826,7 +826,7 @@
               console.log(JSON.stringify(workspaceResult));
               _Blockly.getMainWorkspace().clear();
               try {
-                loadWorkspaceJSON(workspaceResult.data);
+                loadWorkspaceJSON(JSON.parse(workspaceResult.data));
               } catch (error) {
                 alert("Failed to import workspace!");
               }
@@ -975,8 +975,8 @@
     preconditionFn: () => "enabled",
     callback: importFormattedXMLFile,
     scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
-    id: "gitHubImportItem",
-    weight: 181,
+    id: "gitHubImportItemXML",
+    weight: 182,
   };
 
   const gitHubSetupItem = {
@@ -985,7 +985,7 @@
     callback: showSetupDialog,
     scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
     id: "gitHubSetupItem",
-    weight: 182,
+    weight: 183,
   };
 
   const gitHubPullItem = {
@@ -999,7 +999,7 @@
     callback: gitHubPull,
     scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
     id: "gitHubPullItem",
-    weight: 183,
+    weight: 184,
   };
 
   const gitHubCommitItem = {
@@ -1015,7 +1015,7 @@
     },
     scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
     id: "gitHubCommitItem",
-    weight: 184,
+    weight: 185,
   };
 
   const githubMenu = plugin.createMenu(
@@ -1024,8 +1024,9 @@
     _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE
   );
   githubMenu.options = [
-    "items.gitHubImportItem",
     "items.gitHubExportItem",
+    "items.gitHubImportItem",
+    "items.gitHubImportItemXML",
     "items.gitHubSetupItem",
     "items.gitHubPullItem",
     "items.gitHubCommitItem",
