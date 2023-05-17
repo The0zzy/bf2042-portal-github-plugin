@@ -1,5 +1,5 @@
 (function () {
-  const pluginID = "bf2042-portal-github-plugin";
+  const pluginId = "bf2042-portal-github-plugin";
 
   const defaultExperienceData = {
     playgroundId: "",
@@ -26,7 +26,7 @@
     };
   };
 
-  const plugin = BF2042Portal.Plugins.getPlugin(pluginID);
+  const plugin = BF2042Portal.Plugins.getPlugin(pluginId);
 
   let userAgent = plugin.manifest.id + "/" + plugin.manifest.version,
     octokit,
@@ -60,14 +60,12 @@
   }
 
   function loadPluginData() {
-    let loadedData = localStorage.getItem(pluginID);
-    console.log("GitHubPlugin - loaded plugin data.");
+    let loadedData = localStorage.getItem(pluginId);
+    logInfo("loaded storage data");
     if (loadedData != null) {
       loadedData = JSON.parse(loadedData);
       if (!loadedData || !loadedData.version === plugin.manifest.version) {
-        console.error(
-          "GitHub Plugin: invalid plugin data retrieved from storage."
-        );
+        logError("invalid plugin data retrieved from storage");
       } else {
         gitHubPluginData = loadedData;
       }
@@ -76,8 +74,8 @@
 
   function storePluginData() {
     let pluginDataString = JSON.stringify(gitHubPluginData);
-    localStorage.setItem(pluginID, pluginDataString);
-    console.log("GitHubPlugin - stored plugin data.");
+    localStorage.setItem(pluginId, pluginDataString);
+    logInfo("stored plugin data");
   }
 
   function getPlaygroundID() {
@@ -287,7 +285,7 @@
         }
       }
     } catch (e) {
-      console.log("ERROR - Could not add and highlight save button.");
+      logError("Could not add and highlight save button.");
     }
 
     let pluginData = getPluginDataForPlayground(getPlaygroundID());
@@ -341,23 +339,26 @@
       return;
     }
     if (!showLoadingPopupLoaded) {
-      $("<style>")
-        .load(plugin.getUrl("/resources/loadingPopup.css"))
-        .appendTo("head");
+      loadingStylesheet = document.createElement("link");
+      loadingStylesheet.setAttribute("rel", "stylesheet");
+      loadingStylesheet.setAttribute(
+        "href",
+        plugin.getUrl("/resources/loadingPopup.css")
+      );
+      document.head.appendChild(loadingStylesheet);
       showLoadingPopupLoaded = true;
     }
     let loaderPopup = document.getElementById("github_loader_popup");
     if (loaderPopup) {
-      $("#github_loader_popup_text").text(message);
-      $(loaderPopup).show();
-      return;
+      loaderPopup.innerText = message;
+    } else {
+      loaderPopup = document.createElement("div");
+      loaderPopup.setAttribute("class", "github_loader_popup");
+      loaderPopup.setAttribute("id", "github_loader_popup");
+      loaderPopup.innerHTML = `<table><tr><td id="github_loader_popup_status" class="github_plugin_loader"></td><td id="github_loader_popup_text">${message}</td></tr></table>`;
+      document.body.appendChild(loaderPopup);
     }
 
-    loaderPopup = document.createElement("div");
-    loaderPopup.setAttribute("class", "github_loader_popup");
-    loaderPopup.setAttribute("id", "github_loader_popup");
-    loaderPopup.innerHTML = `<table><tr><td id="github_loader_popup_status" class="github_plugin_loader"></td><td id="github_loader_popup_text">${message}</td></tr></table>`;
-    document.body.appendChild(loaderPopup);
     loaderPopup.style.display = "block";
   }
 
@@ -367,7 +368,7 @@
       try {
         octokitModule = await import("https://cdn.skypack.dev/octokit");
       } catch (exception) {
-        console.error(
+        logError(
           "Error during plugin initialization:\nCouldn't load octokit module:\n",
           exception
         );
@@ -375,16 +376,16 @@
 
       try {
         _Blockly.getMainWorkspace().addChangeListener(onWorkspaceChange);
-        //console.log("GitHub Plugin: registered changelistener for workspace.")
+        //logInfo("GitHub Plugin: registered changelistener for workspace.")
       } catch (error) {
-        console.error(
-          "GitHub Plugin: Could not register change listener for blockly workspace.\n",
+        logError(
+          "Could not register change listener for blockly workspace.\n",
           error
         );
       }
       hideLoadingPopup();
     } catch (exception) {
-      console.error(
+      logError(
         "Error during plugin initialization:\nCouldn't get plugin object of extension:\n",
         exception
       );
@@ -392,11 +393,12 @@
   }
 
   function hideLoadingPopup() {
-    $("#github_loader_popup").hide();
+    document.querySelector("#github_loader_popup").style.display = "none";
   }
 
   function hideSetupDialog() {
-    $("#github_plugin_modal_backdrop").hide();
+    document.querySelector("#github_plugin_modal_backdrop").style.display =
+      "none";
   }
 
   function onModalClick(event) {
@@ -444,26 +446,7 @@
   }
 
   function showSetupDialog() {
-    if (!showSetupDialogLoaded) {
-      $("<style>")
-        .load(plugin.getUrl("/resources/setupDialog.css"))
-        .appendTo("head");
-      showSetupDialogLoaded = true;
-    }
-    let modalDialog = $("#github_plugin_modal_backdrop");
-    if (!modalDialog.length) {
-      $("<div>", {
-        class: "github_plugin_modal_backdrop",
-        id: "github_plugin_modal_backdrop",
-      })
-        .load(plugin.getUrl("/resources/modalDialogInner.html"))
-        .appendTo("body");
-    }
-
-    waitForElm("#githubSetup").then((elm) => {
-      initSetupDialog();
-      modalDialog.show();
-    });
+    showDialog(plugin.getUrl("resources/setupDialog.html"), initSetupDialog);
   }
 
   function initSetupDialog() {
@@ -523,7 +506,7 @@
         }
       });
       document
-        .getElementById("github_plugin_modal_backdrop")
+        .getElementById("dialogBackdrop")
         .addEventListener("click", onModalClick);
       document
         .getElementById("gh_setup_close")
@@ -614,8 +597,8 @@
     octokit.rest.users
       .getAuthenticated()
       .then((authResult) => {
-        console.log(JSON.stringify(authResult));
-        console.log("Logged in to GitHub: %s", authResult.data.login);
+        logInfo(JSON.stringify(authResult));
+        logInfo("Logged in to GitHub: %s", authResult.data.login);
         document.forms.githubSetup.user.value = authResult.data.login;
         setStatusIndicatorSuccess(
           document.getElementById("status_indicator_pat")
@@ -623,7 +606,7 @@
         getRepos();
       })
       .catch((exc) => {
-        console.error(exc);
+        logError(exc);
         setStatusIndicatorFailure(
           document.getElementById("status_indicator_pat")
         );
@@ -699,7 +682,7 @@
         document.forms.githubSetup.branch.disabled = false;
       })
       .catch((exc) => {
-        console.error(exc);
+        logError(exc);
         setStatusIndicatorFailure(
           document.getElementById("status_indicator_branch")
         );
@@ -823,7 +806,7 @@
               ref: pluginDataForPlayground.repository.branch,
             })
             .then((workspaceResult) => {
-              console.log(JSON.stringify(workspaceResult));
+              logInfo(JSON.stringify(workspaceResult));
               _Blockly.getMainWorkspace().clear();
               try {
                 loadWorkspaceJSON(JSON.parse(workspaceResult.data));
@@ -832,11 +815,11 @@
               }
             })
             .catch((exc) => {
-              console.error(exc);
+              logError(exc);
               alert("Couldn't load latest workspace from repository!");
             });
         } catch (e) {
-          console.error(e);
+          logError(e);
           alert("Failed to import workspace!");
         }
       }
@@ -878,7 +861,7 @@
             ref: pluginDataForPlayground.repository.branch,
           })
           .then((result) => {
-            console.log(JSON.stringify(result));
+            logInfo(JSON.stringify(result));
             let workspaceFile = null;
             result.data.forEach((element) => {
               if (
@@ -901,13 +884,13 @@
                 })
                 .then((result1) => {
                   let updateResultText = JSON.stringify(result1);
-                  console.log("Commit Result: " + updateResultText);
+                  logInfo("Commit Result: " + updateResultText);
                   //alert("Commited: " + result1.data.commit.sha);
                   showLoadingPopup("Commited: " + result1.data.commit.sha);
                   setTimeout(hideLoadingPopup, 1500);
                 })
                 .catch((exc) => {
-                  console.error(exc);
+                  logError(exc);
                   alert("Failed to commit!\n" + JSON.stringify(exc));
                   setTimeout(hideLoadingPopup, 1500);
                 });
@@ -923,20 +906,20 @@
                 })
                 .then((result1) => {
                   let updateResultText = JSON.stringify(result1);
-                  console.log("Update Result: " + updateResultText);
+                  logInfo("Update Result: " + updateResultText);
                   //alert("Commited: " + result1.data.commit.sha);
                   showLoadingPopup("Commited: " + result1.data.commit.sha);
                   setTimeout(hideLoadingPopup, 1500);
                 })
                 .catch((exc) => {
-                  console.error(exc);
+                  logError(exc);
                   alert("Failed to commit!\n" + JSON.stringify(exc));
                   setTimeout(hideLoadingPopup, 1500);
                 });
             }
           })
           .catch((e) => {
-            console.error(e);
+            logError(e);
             alert("Failed to commit!\n" + JSON.stringify(e));
             setTimeout(hideLoadingPopup, 1500);
           });
@@ -950,6 +933,76 @@
       return false;
     }
     return true;
+  }
+
+  function showDialog(dialogUrl, initFn) {
+    try {
+      fetch(dialogUrl)
+        .then((response) => {
+          if (!response.ok) {
+            logError(
+              "Did not receive proper response for manage dialog url '" +
+                url +
+                "'"
+            );
+          } else {
+            response
+              .text()
+              .then((data) => {
+                logInfo("Retrieved following dialog data:\n", data);
+                let dialogDoc = new DOMParser().parseFromString(
+                  data,
+                  "text/html"
+                );
+                let dialogBackdrop = dialogDoc.getElementById("dialogBackdrop");
+                let styleLink = dialogDoc.head.querySelector("link");
+                styleLink.setAttribute(
+                  "href",
+                  plugin.getUrl(styleLink.getAttribute("href"))
+                );
+                document.head.appendChild(styleLink);
+                let existingBackdrop = document.getElementById(
+                  "dialogBackdrop"
+                );
+                if (existingBackdrop) {
+                  document.body.removeChild(existingBackdrop);
+                }
+                document.body.appendChild(dialogBackdrop);
+                initFn();
+              })
+              .catch((reason) => {
+                logError(
+                  "Couldn't parse response data for dialog url '" +
+                    dialogUrl +
+                    "'\n" +
+                    reason
+                );
+              });
+          }
+        })
+        .catch((reason) => {
+          logError("Couldn't fetch dialog url '" + dialogUrl + "'\n" + reason);
+        });
+    } catch (e) {
+      logError("Failed to open dialog!", e);
+      alert("Failed to open dialog!\nCheck console for details.");
+    }
+  }
+
+  function getLogPrefix(messageType) {
+    return "[" + pluginId + "] [" + messageType + "] - ";
+  }
+
+  function logInfo(message, data) {
+    console.info(getLogPrefix("INFO") + message, data);
+  }
+
+  function logWarning(message, data) {
+    console.warn(getLogPrefix("WARNING") + message, data);
+  }
+
+  function logError(message, data) {
+    console.error(getLogPrefix("ERROR") + message, data);
   }
 
   const gitHubExportItem = {
@@ -1032,13 +1085,7 @@
     "items.gitHubCommitItem",
   ];
 
-  // Load the script
-  const script = document.createElement("script");
-  script.src =
-    "https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js";
-  script.type = "text/javascript";
-  script.addEventListener("load", () => {
-    console.log(`jQuery ${$.fn.jquery} has been loaded successfully!`);
+  plugin.initializeWorkspace = function () {
     initGitHubPlugin()
       .then((result) => {
         try {
@@ -1051,14 +1098,13 @@
           plugin.registerItem(gitHubCommitItem);
           plugin.registerMenu(githubMenu);
           _Blockly.ContextMenuRegistry.registry.register(githubMenu);
-          console.log("GitHub Plugin loaded.");
+          logInfo("GitHub Plugin loaded.");
         } catch (exception) {
-          console.error("could not register blockly menu items\n", exception);
+          logError("could not register blockly menu items\n", exception);
         }
       })
       .catch((exc) => {
-        console.error("Could not load plugin:", exc);
+        logError("Could not load plugin:", exc);
       });
-  });
-  document.head.appendChild(script);
+  };
 })();
