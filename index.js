@@ -397,14 +397,11 @@
   }
 
   function hideSetupDialog() {
-    document.querySelector("#github_plugin_modal_backdrop").style.display =
-      "none";
+    document.querySelector("#dialogBackdrop").style.display = "none";
   }
 
   function onModalClick(event) {
-    if (
-      event.target === document.getElementById("github_plugin_modal_backdrop")
-    ) {
+    if (event.target === document.getElementById("dialogBackdrop")) {
       hideSetupDialog();
     }
   }
