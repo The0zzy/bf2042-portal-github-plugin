@@ -1073,6 +1073,7 @@
     "GitHub",
     _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE
   );
+  githubMenu.weight = 99;
   githubMenu.options = [
     "items.gitHubExportItem",
     "items.gitHubImportItem",
