@@ -36,36 +36,14 @@
       version: plugin.manifest.version,
     },
     changeStack = [],
-    showLoadingPopupLoaded = false,
-    showSetupDialogLoaded = false;
-
-  function waitForElm(selector) {
-    return new Promise((resolve) => {
-      if (document.querySelector(selector)) {
-        return resolve(document.querySelector(selector));
-      }
-
-      const observer = new MutationObserver((mutations) => {
-        if (document.querySelector(selector)) {
-          resolve(document.querySelector(selector));
-          observer.disconnect();
-        }
-      });
-
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-      });
-    });
-  }
+    showLoadingPopupLoaded = false;
 
   function loadPluginData() {
     let loadedData = localStorage.getItem(pluginId);
-    logInfo("loaded storage data");
     if (loadedData != null) {
       loadedData = JSON.parse(loadedData);
       if (!loadedData || !loadedData.version === plugin.manifest.version) {
-        logError("invalid plugin data retrieved from storage");
+        throw "Invalid or outdated plugin data retrieved from storage!";
       } else {
         gitHubPluginData = loadedData;
       }
@@ -363,33 +341,8 @@
   }
 
   async function initGitHubPlugin() {
-    try {
-      showLoadingPopup("Initializing GitHub Plugin...");
-      try {
-        octokitModule = await import("https://cdn.skypack.dev/octokit");
-      } catch (exception) {
-        logError(
-          "Error during plugin initialization:\nCouldn't load octokit module:\n",
-          exception
-        );
-      }
-
-      try {
-        _Blockly.getMainWorkspace().addChangeListener(onWorkspaceChange);
-        //logInfo("GitHub Plugin: registered changelistener for workspace.")
-      } catch (error) {
-        logError(
-          "Could not register change listener for blockly workspace.\n",
-          error
-        );
-      }
-      hideLoadingPopup();
-    } catch (exception) {
-      logError(
-        "Error during plugin initialization:\nCouldn't get plugin object of extension:\n",
-        exception
-      );
-    }
+    showLoadingPopup("Loading GitHub Octokit Module...");
+    octokitModule = await import("https://cdn.skypack.dev/octokit");
   }
 
   function hideLoadingPopup() {
@@ -1087,7 +1040,41 @@
     initGitHubPlugin()
       .then((result) => {
         try {
+          showLoadingPopup("Initialize change listener...");
+          logInfo("Initialize change listener for workspace...");
+          _Blockly.getMainWorkspace().addChangeListener(onWorkspaceChange);
+          logInfo("Initialized change listener for workspace.");
+        } catch (error) {
+          logError(
+            "Could not register change listener for blockly workspace.\n",
+            error
+          );
+          alert(
+            "Could not register change listener for blockly workspace.\n",
+            error
+          );
+        } finally {
+          hideLoadingPopup();
+        }
+
+        try {
+          showLoadingPopup("Loading storage data...");
+          logInfo("Loading storage data...");
           loadPluginData();
+          logInfo(
+            "Retrieved data for " +
+              gitHubPluginData.experiences.length +
+              " experience(s) from storage."
+          );
+        } catch (error) {
+          logError("Couldn't load storage data:\n", error);
+          alert("Couldn't load storage data:\n" + error);
+        } finally {
+          hideLoadingPopup();
+        }
+        try {
+          showLoadingPopup("Register menu items...");
+          logInfo("Register menu items...");
           plugin.registerItem(gitHubImportItem);
           plugin.registerItem(gitHubImportItemXML);
           plugin.registerItem(gitHubExportItem);
@@ -1096,13 +1083,18 @@
           plugin.registerItem(gitHubCommitItem);
           plugin.registerMenu(githubMenu);
           _Blockly.ContextMenuRegistry.registry.register(githubMenu);
-          logInfo("GitHub Plugin loaded.");
         } catch (exception) {
-          logError("could not register blockly menu items\n", exception);
+          logError("Couldn't register blockly menu items\n", exception);
+          alert("Couldn't register blockly menu items\n" + exception);
+        } finally {
+          hideLoadingPopup();
         }
+        logInfo("GitHub Plugin initialization finished.");
       })
-      .catch((exc) => {
-        logError("Could not load plugin:", exc);
+      .catch((exception) => {
+        logError("Couldn't load octokit module:\n", exception);
+        hideLoadingPopup();
+        alert("GitHub Plugin initialization failed!\n" + exception);
       });
   };
 })();
