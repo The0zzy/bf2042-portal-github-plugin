@@ -163,11 +163,13 @@
             const loadData = e.target.result;
             try {
               loadWorkspaceJSON(JSON.parse(loadData));
-            } catch (error) {
-              alert("Failed to import workspace!");
+            } catch (exception) {
+              logError("Failed to import workspace!\n", exception);
+              alert("Failed to import workspace!\n" + exception);
             }
-          } catch (e) {
-            alert("Failed to import workspace!");
+          } catch (exception) {
+            logError("Failed to import workspace!\n", exception);
+            alert("Failed to import workspace!\n" + exception);
           }
         };
 
@@ -340,7 +342,7 @@
     loaderPopup.style.display = "block";
   }
 
-  async function initGitHubPlugin() {
+  async function loadOctokitModule() {
     showLoadingPopup("Loading GitHub Octokit Module...");
     octokitModule = await import("https://cdn.skypack.dev/octokit");
   }
@@ -1037,7 +1039,7 @@
   ];
 
   plugin.initializeWorkspace = function () {
-    initGitHubPlugin()
+    loadOctokitModule()
       .then((result) => {
         try {
           showLoadingPopup("Initialize change listener...");
@@ -1095,6 +1097,58 @@
         logError("Couldn't load octokit module:\n", exception);
         hideLoadingPopup();
         alert("GitHub Plugin initialization failed!\n" + exception);
+
+        try {
+          showLoadingPopup("Initialize change listener...");
+          logInfo("Initialize change listener for workspace...");
+          _Blockly.getMainWorkspace().addChangeListener(onWorkspaceChange);
+          logInfo("Initialized change listener for workspace.");
+        } catch (error) {
+          logError(
+            "Could not register change listener for blockly workspace.\n",
+            error
+          );
+          alert(
+            "Could not register change listener for blockly workspace.\n",
+            error
+          );
+        } finally {
+          hideLoadingPopup();
+        }
+
+        try {
+          showLoadingPopup("Loading storage data...");
+          logInfo("Loading storage data...");
+          loadPluginData();
+          logInfo(
+            "Retrieved data for " +
+              gitHubPluginData.experiences.length +
+              " experience(s) from storage."
+          );
+        } catch (error) {
+          logError("Couldn't load storage data:\n", error);
+          alert("Couldn't load storage data:\n" + error);
+        } finally {
+          hideLoadingPopup();
+        }
+        try {
+          showLoadingPopup("Register menu items...");
+          logInfo("Register menu items...");
+          plugin.registerItem(gitHubImportItem);
+          plugin.registerItem(gitHubImportItemXML);
+          plugin.registerItem(gitHubExportItem);
+          plugin.registerItem(gitHubSetupItem);
+          plugin.registerItem(gitHubPullItem);
+          plugin.registerItem(gitHubCommitItem);
+          plugin.registerMenu(githubMenu);
+          _Blockly.ContextMenuRegistry.registry.register(githubMenu);
+        } catch (exception) {
+          logError("Couldn't register blockly menu items\n", exception);
+          alert("Couldn't register blockly menu items\n" + exception);
+        } finally {
+          hideLoadingPopup();
+        }
+        logInfo("GitHub Plugin initialization finished.");
       });
   };
 })();
