@@ -199,7 +199,10 @@
   }
 
   function loadWorkspaceJSON(workspaceJSON) {
-    _Blockly.serialization.workspaces.load(workspaceJSON);
+    _Blockly.serialization.workspaces.load(
+      workspaceJSON,
+      _Blockly.getMainWorkspace()
+    );
   }
 
   function highlightSaveBtn() {
@@ -344,7 +347,7 @@
 
   async function loadOctokitModule() {
     showLoadingPopup("Loading GitHub Octokit Module...");
-    octokitModule = await import("https://cdn.skypack.dev/octokit");
+    octokitModule = await import("https://cdn.skypack.dev/@octokit/rest");
   }
 
   function hideLoadingPopup() {
