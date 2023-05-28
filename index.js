@@ -94,9 +94,9 @@
   }
 
   function exportWorkspaceJSON() {
-    const workspaceXML = getFormattedWorkspaceJSON();
+    const workspaceJson = getFormattedWorkspaceJSON();
     const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(
-      workspaceXML
+      workspaceJson
     )}`;
     downloadFile(dataUri, "workspace.json");
   }
@@ -192,7 +192,7 @@
       );
       return true;
     } catch (e) {
-      BF2042Portal.Shared.logError("Failed to load workspace!", e);
+      logError("Failed to load workspace!", e);
     }
 
     return false;
@@ -207,12 +207,14 @@
 
   function highlightSaveBtn() {
     let saveBtn = document.querySelector('[aria-label="save button"]');
-    if (getPluginDataForPlayground(getPlaygroundID()).commitOnSave) {
-      saveBtn.style.backgroundColor = "#26ffdf";
-    } else {
-      saveBtn.style.backgroundColor = "";
+    if (saveBtn) {
+      if (getPluginDataForPlayground(getPlaygroundID()).commitOnSave) {
+        saveBtn.style.backgroundColor = "#26ffdf";
+      } else {
+        saveBtn.style.backgroundColor = "";
+      }
+      saveBtn.onmouseup = saveBtnClicked;
     }
-    saveBtn.onmouseup = saveBtnClicked;
   }
 
   function githubSaveBtnClicked(event) {
@@ -232,10 +234,7 @@
 
   function onWorkspaceChange(changeEvent) {
     try {
-      let saveBtn = document.querySelector('[aria-label="save button"]');
-      if (saveBtn) {
-        highlightSaveBtn();
-      }
+      highlightSaveBtn();
 
       let actionButtons = document.querySelector("div.action-button-group");
       if (actionButtons) {
@@ -746,6 +745,7 @@
         )
       ) {
         try {
+          showLoadingPopup("Pulling workspace...");
           octokit = new octokitModule.Octokit({
             auth: pluginDataForPlayground.personalAccessToken,
             userAgent: userAgent,
@@ -769,13 +769,66 @@
                 alert("Failed to import workspace!");
               }
             })
-            .catch((exc) => {
-              logError(exc);
-              alert("Couldn't load latest workspace from repository!");
+            .catch((exception) => {
+              logError(exception);
+              if (exception.status && exception.status == 404) {
+                if (
+                  confirm(
+                    "Couldn't find '" +
+                      pluginDataForPlayground.workspacePath +
+                      "'\nDo you want to load a legacy 'workspace.xml'?"
+                  )
+                ) {
+                  octokit.rest.repos
+                    .getContent({
+                      mediaType: {
+                        format: "raw",
+                      },
+                      owner: pluginDataForPlayground.repository.owner,
+                      repo: pluginDataForPlayground.repository.name,
+                      path: "workspace.xml",
+                      ref: pluginDataForPlayground.repository.branch,
+                    })
+                    .then((workspaceResult) => {
+                      logInfo(JSON.stringify(workspaceResult));
+                      try {
+                        _Blockly.getMainWorkspace().clear();
+                        loadFormattedXML(workspaceResult.data);
+                      } catch (exception) {
+                        logError(
+                          "Failed to import legacy workspace!\n",
+                          exception
+                        );
+                        alert(
+                          "Failed to import legacy workspace!\n" + exception
+                        );
+                      }
+                    })
+                    .catch((exception) => {
+                      logError(
+                        "Failed to import legacy workspace!\n",
+                        exception
+                      );
+                      alert("Failed to import legacy workspace!\n" + exception);
+                    });
+                }
+              } else {
+                logError(
+                  "Couldn't load latest workspace from repository!\n",
+                  exception
+                );
+                alert(
+                  "Couldn't load latest workspace from repository!\n" +
+                    exception
+                );
+              }
+            })
+            .finally(() => {
+              hideLoadingPopup();
             });
-        } catch (e) {
-          logError(e);
-          alert("Failed to import workspace!");
+        } catch (exception) {
+          logError(exception);
+          alert("Failed to import workspace!\n" + exception);
         }
       }
     }
@@ -844,9 +897,9 @@
                   showLoadingPopup("Commited: " + result1.data.commit.sha);
                   setTimeout(hideLoadingPopup, 1500);
                 })
-                .catch((exc) => {
-                  logError(exc);
-                  alert("Failed to commit!\n" + JSON.stringify(exc));
+                .catch((exception) => {
+                  logError(exception);
+                  alert("Failed to commit!\n" + JSON.stringify(exception));
                   setTimeout(hideLoadingPopup, 1500);
                 });
             } else {
@@ -866,16 +919,16 @@
                   showLoadingPopup("Commited: " + result1.data.commit.sha);
                   setTimeout(hideLoadingPopup, 1500);
                 })
-                .catch((exc) => {
-                  logError(exc);
-                  alert("Failed to commit!\n" + JSON.stringify(exc));
+                .catch((exception) => {
+                  logError(exception);
+                  alert("Failed to commit!\n" + JSON.stringify(exception));
                   setTimeout(hideLoadingPopup, 1500);
                 });
             }
           })
-          .catch((e) => {
-            logError(e);
-            alert("Failed to commit!\n" + JSON.stringify(e));
+          .catch((exception) => {
+            logError(exception);
+            alert("Failed to commit!\n" + JSON.stringify(exception));
             setTimeout(hideLoadingPopup, 1500);
           });
       }
@@ -938,8 +991,8 @@
         .catch((reason) => {
           logError("Couldn't fetch dialog url '" + dialogUrl + "'\n" + reason);
         });
-    } catch (e) {
-      logError("Failed to open dialog!", e);
+    } catch (exception) {
+      logError("Failed to open dialog!", exception);
       alert("Failed to open dialog!\nCheck console for details.");
     }
   }
@@ -1049,14 +1102,14 @@
           logInfo("Initialize change listener for workspace...");
           _Blockly.getMainWorkspace().addChangeListener(onWorkspaceChange);
           logInfo("Initialized change listener for workspace.");
-        } catch (error) {
+        } catch (exception) {
           logError(
             "Could not register change listener for blockly workspace.\n",
-            error
+            exception
           );
           alert(
             "Could not register change listener for blockly workspace.\n",
-            error
+            exception
           );
         } finally {
           hideLoadingPopup();
@@ -1071,9 +1124,9 @@
               gitHubPluginData.experiences.length +
               " experience(s) from storage."
           );
-        } catch (error) {
-          logError("Couldn't load storage data:\n", error);
-          alert("Couldn't load storage data:\n" + error);
+        } catch (exception) {
+          logError("Couldn't load storage data:\n", exception);
+          alert("Couldn't load storage data:\n" + exception);
         } finally {
           hideLoadingPopup();
         }
@@ -1100,58 +1153,6 @@
         logError("Couldn't load octokit module:\n", exception);
         hideLoadingPopup();
         alert("GitHub Plugin initialization failed!\n" + exception);
-
-        try {
-          showLoadingPopup("Initialize change listener...");
-          logInfo("Initialize change listener for workspace...");
-          _Blockly.getMainWorkspace().addChangeListener(onWorkspaceChange);
-          logInfo("Initialized change listener for workspace.");
-        } catch (error) {
-          logError(
-            "Could not register change listener for blockly workspace.\n",
-            error
-          );
-          alert(
-            "Could not register change listener for blockly workspace.\n",
-            error
-          );
-        } finally {
-          hideLoadingPopup();
-        }
-
-        try {
-          showLoadingPopup("Loading storage data...");
-          logInfo("Loading storage data...");
-          loadPluginData();
-          logInfo(
-            "Retrieved data for " +
-              gitHubPluginData.experiences.length +
-              " experience(s) from storage."
-          );
-        } catch (error) {
-          logError("Couldn't load storage data:\n", error);
-          alert("Couldn't load storage data:\n" + error);
-        } finally {
-          hideLoadingPopup();
-        }
-        try {
-          showLoadingPopup("Register menu items...");
-          logInfo("Register menu items...");
-          plugin.registerItem(gitHubImportItem);
-          plugin.registerItem(gitHubImportItemXML);
-          plugin.registerItem(gitHubExportItem);
-          plugin.registerItem(gitHubSetupItem);
-          plugin.registerItem(gitHubPullItem);
-          plugin.registerItem(gitHubCommitItem);
-          plugin.registerMenu(githubMenu);
-          _Blockly.ContextMenuRegistry.registry.register(githubMenu);
-        } catch (exception) {
-          logError("Couldn't register blockly menu items\n", exception);
-          alert("Couldn't register blockly menu items\n" + exception);
-        } finally {
-          hideLoadingPopup();
-        }
-        logInfo("GitHub Plugin initialization finished.");
       });
   };
 })();
