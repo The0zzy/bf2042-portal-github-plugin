@@ -260,10 +260,10 @@
           githubSaveButton.addEventListener("click", githubSaveBtnClicked);
           actionButtons.appendChild(githubSaveButton);
         }
-        if (saveBtn && isRepoDefined()) {
-          $(githubSaveButton).show();
+        if (isRepoDefined()) {
+          githubSaveButton.style.display = "block";
         } else {
-          $(githubSaveButton).hide();
+          githubSaveButton.style.display = "none";
         }
       }
     } catch (e) {
@@ -1140,6 +1140,9 @@
           plugin.registerItem(gitHubPullItem);
           plugin.registerItem(gitHubCommitItem);
           plugin.registerMenu(githubMenu);
+          if (_Blockly.ContextMenuRegistry.registry.getItem(githubMenu.id)) {
+            _Blockly.ContextMenuRegistry.registry.unregister(githubMenu.id);
+          }
           _Blockly.ContextMenuRegistry.registry.register(githubMenu);
         } catch (exception) {
           logError("Couldn't register blockly menu items\n", exception);
