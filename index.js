@@ -775,7 +775,7 @@
                 if (
                   confirm(
                     "Couldn't find '" +
-                      pluginDataForPlayground.workspacePath +
+                      defaultExperienceData.workspacePath +
                       "'\nDo you want to load a legacy 'workspace.xml'?"
                   )
                 ) {
