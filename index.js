@@ -757,7 +757,7 @@
               },
               owner: pluginDataForPlayground.repository.owner,
               repo: pluginDataForPlayground.repository.name,
-              path: pluginDataForPlayground.workspacePath,
+              path: defaultExperienceData.workspacePath,
               ref: pluginDataForPlayground.repository.branch,
             })
             .then((workspaceResult) => {

@@ -1,9 +1,9 @@
 {
-    "id": "bf2042-portal-github-plugin",
-    "name": "GitHub Integration",
-    "version": "1.0.0",
-    "author": "TheOzzy",
-    "main": "index.js",
-    "homepage": "https://the0zzy.github.io/bf2042-portal-github-plugin/",
-    "description": "This plugin adds integration features for GitHub repositories"
+  "id": "bf2042-portal-github-plugin",
+  "name": "GitHub Integration",
+  "version": "1.0.1",
+  "author": "TheOzzy",
+  "main": "index.js",
+  "homepage": "https://the0zzy.github.io/bf2042-portal-github-plugin/",
+  "description": "This plugin adds integration features for GitHub repositories"
 }
