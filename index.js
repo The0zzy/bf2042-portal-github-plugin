@@ -873,7 +873,7 @@
             let workspaceFile = null;
             result.data.forEach((element) => {
               if (
-                element.path === pluginDataForPlayground.workspacePath &&
+                element.path === defaultExperienceData.workspacePath &&
                 element.type === "file"
               ) {
                 workspaceFile = element;
@@ -884,7 +884,7 @@
                 .createOrUpdateFileContents({
                   owner: pluginDataForPlayground.repository.owner,
                   repo: pluginDataForPlayground.repository.name,
-                  path: pluginDataForPlayground.workspacePath,
+                  path: defaultExperienceData.workspacePath,
                   branch: pluginDataForPlayground.repository.branch,
                   message: commitMessage,
                   content: contentString,
@@ -907,7 +907,7 @@
                 .createOrUpdateFileContents({
                   owner: pluginDataForPlayground.repository.owner,
                   repo: pluginDataForPlayground.repository.name,
-                  path: pluginDataForPlayground.workspacePath,
+                  path: defaultExperienceData.workspacePath,
                   branch: pluginDataForPlayground.repository.branch,
                   message: commitMessage,
                   content: contentString,
