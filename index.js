@@ -346,7 +346,7 @@
 
   async function loadOctokitModule() {
     showLoadingPopup("Loading GitHub Octokit Module...");
-    octokitModule = await import("https://cdn.skypack.dev/@octokit/rest");
+    octokitModule = await import("https://esm.sh/@octokit/rest");
   }
 
   function hideLoadingPopup() {
