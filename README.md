@@ -1,4 +1,4 @@
-# bf2042-portal-github-plugin
+# BF2042 Portal GitHub Plugin
 
 ## About
 
@@ -19,7 +19,8 @@ The plugin utilizes the [GutHub REST API](https://docs.github.com/en/rest) with 
 7. A context menu should appear which shows an `Options >` item (if not, reload the page again and check that the Portal browser extension is active)
 8. Click on `Options >` and then `Plugin Manager`
 9. In the Plugin Manager click on `Add Plugin` on the top-right corner
-10. Enter the following URL and click `Review`, then click `Confirm` after seeing the sourcecode of the plugin.
+10. Enter the **Plugin Manifest URL** below and click `Review`, then click `Confirm` after seeing the sourcecode of the plugin.
+11. After the plugin was added to the list of plugins, you need to reload the rules editor page in order to activate it
 
 **Plugin manifest.json URL**
 ```txt
