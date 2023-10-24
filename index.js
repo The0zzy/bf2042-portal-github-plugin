@@ -468,9 +468,9 @@
       document
         .getElementById("github_plugin_modal_pat")
         .addEventListener("blur", patChanged);
-      document
-        .getElementById("status_indicator_pat")
-        .addEventListener("click", patChanged);
+      // document
+      //   .getElementById("status_indicator_pat")
+      //   .addEventListener("click", patChanged);
       document
         .getElementById("github_plugin_modal_autocommit")
         .addEventListener("change", autoCommitChanged);
@@ -567,40 +567,126 @@
       });
   }
 
-  function getRepos() {
+  async function getPaginatedData(url) {
+    const nextPattern = /(?<=<)([\S]*)(?=>; rel="Next")/i;
+    let pagesRemaining = true;
+    let data = [];
+    const linkHeader = response.headers.link;
+
+    pagesRemaining = linkHeader && linkHeader.includes(`rel=\"next\"`);
+
+    if (pagesRemaining) {
+      url = linkHeader.match(nextPattern)[0];
+    }
+
+    while (pagesRemaining) {
+      const response = await octokit.request(`GET ${url}`, {
+        per_page: 100,
+        headers: {
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+      });
+
+      const parsedData = parseData(response.data);
+      data = [...data, ...parsedData];
+
+      const linkHeader = response.headers.link;
+
+      pagesRemaining = linkHeader && linkHeader.includes(`rel=\"next\"`);
+
+      if (pagesRemaining) {
+        url = linkHeader.match(nextPattern)[0];
+      }
+    }
+
+    return data;
+  }
+
+  function parseData(data) {
+    // If the data is an array, return that
+    if (Array.isArray(data)) {
+      return data;
+    }
+
+    // Some endpoints respond with 204 No Content instead of empty array
+    //   when there is no data. In that case, return an empty array.
+    if (!data) {
+      return [];
+    }
+
+    // Otherwise, the array of items that we want is in an object
+    // Delete keys that don't include the array of items
+    delete data.incomplete_results;
+    delete data.repository_selection;
+    delete data.total_count;
+    // Pull out the array of items
+    const namespaceKey = Object.keys(data)[0];
+    data = data[namespaceKey];
+
+    return data;
+  }
+
+  function getRepos(link) {
     setStatusIndicatorLoading(
       document.getElementById("status_indicator_repository")
     );
     let apiEndPoint = "/user/repos";
-
-    if (!document.getElementById("list_org_repo").checked) {
-      apiEndPoint += "?affiliation=owner";
+    if (link && link instanceof String) {
+      apiEndPoint = link;
+    } else {
+      document.forms.githubSetup.repository.innerHTML = "";
+      let repoOption = document.createElement("option");
+      repoOption.setAttribute("value", "select");
+      repoOption.innerHTML = "Please select...";
+      document.forms.githubSetup.repository.appendChild(repoOption);
+      if (!document.getElementById("list_org_repo").checked) {
+        apiEndPoint += "?affiliation=owner";
+      }
     }
     octokit
-      .request(`GET ${apiEndPoint}`, {per_page:100})
+      .request(`GET ${apiEndPoint}`, { per_page: 100 })
       .then((repoResult) => {
-        setStatusIndicatorSuccess(
-          document.getElementById("status_indicator_repository")
-        );
-        document.forms.githubSetup.repository.innerHTML = "";
-        let repoOption = document.createElement("option");
-        repoOption.setAttribute("value", "select");
-        repoOption.innerHTML = "Please select...";
-        document.forms.githubSetup.repository.appendChild(repoOption);
         repoResult.data.forEach((repo) => {
-          repoOption = document.createElement("option");
+          let optGroups =
+            document.forms.githubSetup.repository.getElementsByTagName(
+              "optgroup"
+            );
+          let optGroup = optGroups.namedItem(repo.owner.login);
+          let repoOption = document.createElement("option");
           repoOption.setAttribute(
             "value",
             repo.owner.login + ";" + repo.name + ";" + repo.full_name
           );
-          repoOption.innerHTML = repo.full_name;
-          document.forms.githubSetup.repository.appendChild(repoOption);
+          repoOption.innerHTML = repo.name;
+          if (!optGroup) {
+            optGroup = document.createElement("optgroup");
+            optGroup.setAttribute("id", repo.owner.login);
+            optGroup.setAttribute(
+              "label",
+              `${repo.owner.type}: ${repo.owner.login}`
+            );
+            document.forms.githubSetup.repository.appendChild(optGroup);
+          }
+          optGroup.appendChild(repoOption);
         });
-        document.forms.githubSetup.repository.disabled = false;
-        document.forms.githubSetup.repository.addEventListener(
-          "change",
-          getBranches
-        );
+
+        let nextPattern = /(?<=<)([\S]*)(?=>; rel="Next")/i;
+        let pagesRemaining = true;
+        let linkHeader = repoResult.headers.link;
+        pagesRemaining = linkHeader && linkHeader.includes(`rel=\"next\"`);
+        if (pagesRemaining) {
+          url = linkHeader.match(nextPattern)[0];
+          getRepos(url);
+        } else {
+          setStatusIndicatorSuccess(
+            document.getElementById("status_indicator_repository")
+          );
+          document.forms.githubSetup.repository.disabled = false;
+          document.forms.githubSetup.repository.addEventListener(
+            "change",
+            getBranches
+          );
+        }
       })
       .catch((exc) => {
         setStatusIndicatorFailure(
@@ -609,31 +695,44 @@
       });
   }
 
-  function getBranches() {
+  function getBranches(link) {
     setStatusIndicatorLoading(
       document.getElementById("status_indicator_branch")
     );
+    let owner = document.forms.githubSetup.repository.value.split(";", 1)[0];
+    let repo = document.forms.githubSetup.repository.value.split(";", 2)[1];
+    let apiEndPoint = `/repos/${owner}/${repo}/branches`;
+    if (link && link instanceof String) {
+      apiEndPoint = link;
+    } else {
+      document.forms.githubSetup.branch.innerHTML = "";
+      let branchOption = document.createElement("option");
+      branchOption.setAttribute("value", "select");
+      branchOption.innerHTML = "Please select...";
+      document.forms.githubSetup.branch.appendChild(branchOption);
+    }
     octokit
-      .request("GET /repos/{owner}/{repo}/branches", {
-        owner: document.forms.githubSetup.repository.value.split(";", 1)[0],
-        repo: document.forms.githubSetup.repository.value.split(";", 2)[1],
-      })
+      .request(`GET ${apiEndPoint}`, { per_page: 100 })
       .then((branchResult) => {
-        setStatusIndicatorSuccess(
-          document.getElementById("status_indicator_branch")
-        );
-        document.forms.githubSetup.branch.innerHTML = "";
-        let branchOption = document.createElement("option");
-        branchOption.setAttribute("value", "select");
-        branchOption.innerHTML = "Please select...";
-        document.forms.githubSetup.branch.appendChild(branchOption);
         branchResult.data.forEach((branch) => {
-          branchOption = document.createElement("option");
+          let branchOption = document.createElement("option");
           branchOption.setAttribute("value", branch.name);
           branchOption.innerHTML = branch.name;
           document.forms.githubSetup.branch.appendChild(branchOption);
         });
-        document.forms.githubSetup.branch.disabled = false;
+        let nextPattern = /(?<=<)([\S]*)(?=>; rel="Next")/i;
+        let pagesRemaining = true;
+        let linkHeader = branchResult.headers.link;
+        pagesRemaining = linkHeader && linkHeader.includes(`rel=\"next\"`);
+        if (pagesRemaining) {
+          url = linkHeader.match(nextPattern)[0];
+          getBranches(url);
+        } else {
+          setStatusIndicatorSuccess(
+            document.getElementById("status_indicator_branch")
+          );
+          document.forms.githubSetup.branch.disabled = false;
+        }
       })
       .catch((exc) => {
         logError(exc);
@@ -969,9 +1068,8 @@
                   plugin.getUrl(styleLink.getAttribute("href"))
                 );
                 document.head.appendChild(styleLink);
-                let existingBackdrop = document.getElementById(
-                  "dialogBackdrop"
-                );
+                let existingBackdrop =
+                  document.getElementById("dialogBackdrop");
                 if (existingBackdrop) {
                   document.body.removeChild(existingBackdrop);
                 }
