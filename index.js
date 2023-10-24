@@ -577,7 +577,7 @@
       apiEndPoint += "?affiliation=owner";
     }
     octokit
-      .request(`GET ${apiEndPoint}`, {})
+      .request(`GET ${apiEndPoint}`, {per_page:100})
       .then((repoResult) => {
         setStatusIndicatorSuccess(
           document.getElementById("status_indicator_repository")
