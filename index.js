@@ -498,7 +498,6 @@
 
   function setStatusIndicatorLoading(indicatorElement) {
     indicatorElement.innerHTML = "";
-    indicatorElement.removeAttribute("class");
     indicatorElement.removeAttribute("style");
     indicatorElement.setAttribute("class", "github_plugin_loader");
     indicatorElement.removeEventListener(
@@ -509,7 +508,7 @@
 
   function setStatusIndicatorFailure(indicatorElement) {
     indicatorElement.innerHTML = "";
-    indicatorElement.removeAttribute("class");
+    indicatorElement.setAttribute("class", "statusIndicator");
     indicatorElement.removeAttribute("style");
     indicatorElement.setAttribute(
       "style",
@@ -524,7 +523,7 @@
 
   function setStatusIndicatorSuccess(indicatorElement) {
     indicatorElement.innerHTML = "";
-    indicatorElement.removeAttribute("class");
+    indicatorElement.setAttribute("class", "statusIndicator");
     indicatorElement.removeAttribute("style");
     indicatorElement.setAttribute(
       "style",
