@@ -1,11 +1,13 @@
 (function () {
   const pluginId = "bf2042-portal-github-plugin";
 
+  const defaultWorkspacePath = "workspace.json";
+
   const defaultExperienceData = {
     playgroundId: "",
     personalAccessToken: "",
     repository: { name: "", owner: "", branch: "", full_name: "" },
-    workspacePath: "workspace.json",
+    workspacePath: defaultWorkspacePath,
     auth: {},
     commitOnSave: false,
     autoCommit: false,
@@ -98,7 +100,7 @@
     const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(
       workspaceJson
     )}`;
-    downloadFile(dataUri, "workspace.json");
+    downloadFile(dataUri, defaultWorkspacePath);
   }
 
   function importFormattedXMLFile() {
@@ -434,6 +436,7 @@
         pluginData.repository.branch +
         "</option>";
       setupForm.branch.disabled = true;
+      setupForm.workspacePath.value = pluginData.workspacePath;
       setupForm.commitOnSave.checked = pluginData.commitOnSave;
       setupForm.autoCommit.checked = pluginData.autoCommit;
       setupForm.autoCommitCount.value = pluginData.autoCommitCount;
@@ -705,6 +708,12 @@
     ) {
       return false;
     }
+    if (
+      !githubSetup.workspacePath.value ||
+      !githubSetup.workspacePath.value.length > 0
+    ) {
+      return false;
+    }
     return true;
   }
 
@@ -719,6 +728,7 @@
       pluginData.repository.name = repoDetails[1];
       pluginData.repository.full_name = repoDetails[2];
       pluginData.repository.branch = githubSetup.branch.value;
+      pluginData.workspacePath = githubSetup.workspacePath.value;
       pluginData.commitOnSave = githubSetup.commitOnSave.checked;
       pluginData.autoCommit = githubSetup.autoCommit.checked;
       if (pluginData.autoCommit) {
@@ -778,7 +788,7 @@
         confirm(
           "Do you really want to reset this workspace to the latest commit of '" +
             pluginDataForPlayground.repository.name +
-            "' on branch '" +
+            " / "+pluginDataForPlayground.workspacePath+"' on branch '" +
             pluginDataForPlayground.repository.branch +
             "'?"
         )
@@ -796,7 +806,7 @@
               },
               owner: pluginDataForPlayground.repository.owner,
               repo: pluginDataForPlayground.repository.name,
-              path: defaultExperienceData.workspacePath,
+              path: pluginDataForPlayground.workspacePath,
               ref: pluginDataForPlayground.repository.branch,
             })
             .then((workspaceResult) => {
@@ -805,62 +815,14 @@
               try {
                 loadWorkspaceJSON(JSON.parse(workspaceResult.data));
               } catch (error) {
-                alert("Failed to import workspace!");
+                alert("Failed to import workspace!\n" + error);
               }
             })
             .catch((exception) => {
               logError(exception);
-              if (exception.status && exception.status == 404) {
-                if (
-                  confirm(
-                    "Couldn't find '" +
-                      defaultExperienceData.workspacePath +
-                      "'\nDo you want to load a legacy 'workspace.xml'?"
-                  )
-                ) {
-                  octokit.rest.repos
-                    .getContent({
-                      mediaType: {
-                        format: "raw",
-                      },
-                      owner: pluginDataForPlayground.repository.owner,
-                      repo: pluginDataForPlayground.repository.name,
-                      path: "workspace.xml",
-                      ref: pluginDataForPlayground.repository.branch,
-                    })
-                    .then((workspaceResult) => {
-                      logInfo(JSON.stringify(workspaceResult));
-                      try {
-                        _Blockly.getMainWorkspace().clear();
-                        loadFormattedXML(workspaceResult.data);
-                      } catch (exception) {
-                        logError(
-                          "Failed to import legacy workspace!\n",
-                          exception
-                        );
-                        alert(
-                          "Failed to import legacy workspace!\n" + exception
-                        );
-                      }
-                    })
-                    .catch((exception) => {
-                      logError(
-                        "Failed to import legacy workspace!\n",
-                        exception
-                      );
-                      alert("Failed to import legacy workspace!\n" + exception);
-                    });
-                }
-              } else {
-                logError(
-                  "Couldn't load latest workspace from repository!\n",
-                  exception
-                );
-                alert(
-                  "Couldn't load latest workspace from repository!\n" +
-                    exception
-                );
-              }
+              alert(
+                "Couldn't load latest workspace from repository!\n" + exception
+              );
             })
             .finally(() => {
               hideLoadingPopup();
@@ -912,7 +874,7 @@
             let workspaceFile = null;
             result.data.forEach((element) => {
               if (
-                element.path === defaultExperienceData.workspacePath &&
+                element.path === pluginDataForPlayground.workspacePath &&
                 element.type === "file"
               ) {
                 workspaceFile = element;
@@ -923,7 +885,7 @@
                 .createOrUpdateFileContents({
                   owner: pluginDataForPlayground.repository.owner,
                   repo: pluginDataForPlayground.repository.name,
-                  path: defaultExperienceData.workspacePath,
+                  path: pluginDataForPlayground.workspacePath,
                   branch: pluginDataForPlayground.repository.branch,
                   message: commitMessage,
                   content: contentString,
@@ -946,7 +908,7 @@
                 .createOrUpdateFileContents({
                   owner: pluginDataForPlayground.repository.owner,
                   repo: pluginDataForPlayground.repository.name,
-                  path: defaultExperienceData.workspacePath,
+                  path: pluginDataForPlayground.workspacePath,
                   branch: pluginDataForPlayground.repository.branch,
                   message: commitMessage,
                   content: contentString,
