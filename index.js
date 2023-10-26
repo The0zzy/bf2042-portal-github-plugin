@@ -425,7 +425,7 @@
         ";" +
         pluginData.repository.full_name +
         '">' +
-        pluginData.repository.full_name +
+        pluginData.repository.name +
         "</option>";
       setupForm.repository.disabled = true;
       setupForm.branch.value = pluginData.repository.branch;
