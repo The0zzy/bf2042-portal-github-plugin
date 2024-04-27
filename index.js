@@ -1037,7 +1037,7 @@
     alert(message);
   }
 
-  const workspaceSizeItem = {
+  const gitHubWorkspaceSizeItem = {
     displayText: "Show Workspace Size",
     preconditionFn: () => "enabled",
     callback: showWorkspaceSize,
@@ -1052,7 +1052,7 @@
     callback: exportWorkspaceJSON,
     scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
     id: "gitHubExportItem",
-    weight: 180,
+    weight: 181,
   };
 
   const gitHubImportItem = {
@@ -1061,7 +1061,7 @@
     callback: importWorkspaceJSON,
     scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
     id: "gitHubImportItem",
-    weight: 181,
+    weight: 182,
   };
 
   const gitHubImportItemXML = {
@@ -1070,7 +1070,7 @@
     callback: importFormattedXMLFile,
     scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
     id: "gitHubImportItemXML",
-    weight: 182,
+    weight: 183,
   };
 
   const gitHubSetupItem = {
@@ -1079,7 +1079,7 @@
     callback: showSetupDialog,
     scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
     id: "gitHubSetupItem",
-    weight: 183,
+    weight: 184,
   };
 
   const gitHubPullItem = {
@@ -1093,7 +1093,7 @@
     callback: gitHubPull,
     scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
     id: "gitHubPullItem",
-    weight: 184,
+    weight: 185,
   };
 
   const gitHubCommitItem = {
@@ -1109,7 +1109,7 @@
     },
     scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
     id: "gitHubCommitItem",
-    weight: 185,
+    weight: 186,
   };
 
   const githubMenu = plugin.createMenu(
@@ -1167,6 +1167,7 @@
         try {
           showLoadingPopup("Register menu items...");
           logInfo("Register menu items...");
+          plugin.registerItem(gitHubWorkspaceSizeItem);
           plugin.registerItem(gitHubImportItem);
           plugin.registerItem(gitHubImportItemXML);
           plugin.registerItem(gitHubExportItem);
