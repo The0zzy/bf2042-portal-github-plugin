@@ -590,10 +590,9 @@
       .request(`GET ${apiEndPoint}`, { per_page: 100 })
       .then((repoResult) => {
         repoResult.data.forEach((repo) => {
-          let optGroups =
-            document.forms.githubSetup.repository.getElementsByTagName(
-              "optgroup"
-            );
+          let optGroups = document.forms.githubSetup.repository.getElementsByTagName(
+            "optgroup"
+          );
           let optGroup = optGroups.namedItem(repo.owner.login);
           let repoOption = document.createElement("option");
           repoOption.setAttribute(
@@ -788,7 +787,9 @@
         confirm(
           "Do you really want to reset this workspace to the latest commit of '" +
             pluginDataForPlayground.repository.name +
-            " / "+pluginDataForPlayground.workspacePath+"' on branch '" +
+            " / " +
+            pluginDataForPlayground.workspacePath +
+            "' on branch '" +
             pluginDataForPlayground.repository.branch +
             "'?"
         )
@@ -970,8 +971,9 @@
                   plugin.getUrl(styleLink.getAttribute("href"))
                 );
                 document.head.appendChild(styleLink);
-                let existingBackdrop =
-                  document.getElementById("dialogBackdrop");
+                let existingBackdrop = document.getElementById(
+                  "dialogBackdrop"
+                );
                 if (existingBackdrop) {
                   document.body.removeChild(existingBackdrop);
                 }
@@ -1012,6 +1014,37 @@
   function logError(message, data) {
     console.error(getLogPrefix("ERROR") + message, data);
   }
+
+  function getWorkspaceSize() {
+    return (
+      new Blob([
+        JSON.stringify(
+          _Blockly.serialization.workspaces.save(_Blockly.getMainWorkspace())
+        ),
+      ]).size / 1024
+    );
+  }
+
+  function showWorkspaceSize() {
+    let workspaceSize = getWorkspaceSize();
+    let message =
+      "The workspace has an upload size of about " +
+      getWorkspaceSize() +
+      " kilobyte.";
+    if (workspaceSize >= 1024) {
+      message += "\n\nThis might be too big to save the experience!";
+    }
+    alert(message);
+  }
+
+  const workspaceSizeItem = {
+    displayText: "Show Workspace Size",
+    preconditionFn: () => "enabled",
+    callback: showWorkspaceSize,
+    scopeType: _Blockly.ContextMenuRegistry.ScopeType.WORKSPACE,
+    id: "gitHubWorkspaceSizeItem",
+    weight: 180,
+  };
 
   const gitHubExportItem = {
     displayText: "Export Workspace",
@@ -1086,6 +1119,7 @@
   );
   githubMenu.weight = 99;
   githubMenu.options = [
+    "items.gitHubWorkspaceSizeItem",
     "items.gitHubExportItem",
     "items.gitHubImportItem",
     "items.gitHubImportItemXML",
